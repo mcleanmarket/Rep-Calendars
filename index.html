@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v18 -->
-<title>Rep Calendar</title>
+  <!-- v19 -->
+  <title>Rep Calendar</title>
+  <meta name="description" content="Rep Calendar">
+  <meta property="og:title" content="Rep Calendar">
+  <meta property="og:description" content="Rep Calendar">
+  <meta property="og:site_name" content="Rep Calendar">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -190,6 +194,9 @@
     body.dark .sheet-table tbody td { color: #aaa; }
     body.dark .sheet-table tbody td:nth-child(2) { color: #f0f0f0; }
     body.dark .acct-filters { border-bottom-color: #2a2a2a; }
+    body.city-hidden .td-city { display: none; }
+    body.city-hidden .td-plan { width: 220px; }
+
     @media (max-width: 500px) {
       .hdr { padding: 0 12px; }
       .hdr-btns { gap: 5px; }
@@ -217,6 +224,7 @@
     <button class="hbtn" id="modeBtn" onclick="cycleMode()">Schedule</button>
     <button class="hbtn" id="darkBtn" onclick="toggleDark()">Dark</button>
     <button class="hbtn" id="syncBtn" onclick="syncData()">Sync</button>
+    <button class="hbtn" id="cityBtn" onclick="toggleCity()">City</button>
     <button class="hbtn" id="acctBtn" onclick="openDrawer()">Logan</button>
   </div>
 </div>
@@ -660,6 +668,12 @@ function flashCell(el) {
   showToast('Copied');
 }
 
+function toggleCity() {
+  var hidden = document.body.classList.toggle('city-hidden');
+  localStorage.setItem('cityHidden', hidden ? '1' : '0');
+  document.getElementById('cityBtn').style.opacity = hidden ? '0.4' : '1';
+}
+
 // ── Helpers ───────────────────────────────────────────────
 function scrollToToday() { var el=document.getElementById('today-anchor'); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); }
 function toggleDark() { var isDark=document.body.classList.toggle('dark'); localStorage.setItem('calDark',isDark?'1':'0'); document.getElementById('darkBtn').textContent=isDark?'Light':'Dark'; }
@@ -667,6 +681,12 @@ var tTimer;
 function showToast(msg) { var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tTimer); tTimer=setTimeout(function(){t.classList.remove('show');},2500); }
 
 // ── Init ──────────────────────────────────────────────────
+if(localStorage.getItem('cityHidden')==='1'){
+  document.body.classList.add('city-hidden');
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('cityBtn'); if(b) b.style.opacity='0.4';
+  });
+}
 if(localStorage.getItem('calDark')==='1'){document.body.classList.add('dark');document.getElementById('darkBtn').textContent='Light';}
 loadSlots();
 setMode('schedule');
