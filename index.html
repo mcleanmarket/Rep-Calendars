@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v6 -->
+  <!-- v7 -->
 <title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -102,28 +102,42 @@
     /* ── Accounts Drawer ─────────────────────────────────── */
     .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 400; display: none; }
     .drawer-overlay.open { display: block; }
-    .drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 14px 14px 0 0; max-height: 82vh; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.25s ease; z-index: 401; }
+    .drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 14px 14px 0 0; max-height: 88vh; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.25s ease; z-index: 401; }
     .drawer-overlay.open .drawer { transform: translateY(0); }
-    .drawer-hdr { padding: 16px 16px 10px; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
-    .drawer-title-row { display: flex; align-items: center; justify-content: space-between; }
+    .drawer-hdr { padding: 14px 16px 10px; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
+    .drawer-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .drawer-title { font-size: 15px; font-weight: 700; color: var(--black); }
     .drawer-close { background: none; border: none; font-size: 20px; color: var(--g500); cursor: pointer; line-height: 1; }
-    .drawer-stats { font-size: 12px; color: var(--g500); margin-top: 4px; }
-    .drawer-stats strong { color: var(--black); }
-    .drawer-controls { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-    .d-btn { padding: 4px 11px; border: 1.5px solid var(--g200); border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g700); transition: all 0.12s; }
-    .d-btn.on { background: var(--black); border-color: var(--black); color: #fff; }
-    .drawer-list { overflow-y: auto; flex: 1; }
-    .acct-row { border-bottom: 1px solid var(--g100); padding: 10px 16px; cursor: pointer; transition: background 0.1s; }
-    .acct-row:hover { background: var(--g50); }
-    .acct-row:last-child { border-bottom: none; }
-    .acct-main { display: flex; align-items: center; gap: 8px; }
-    .acct-name { font-size: 14px; font-weight: 600; color: var(--black); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .acct-meta { font-size: 12px; color: var(--g500); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .acct-more { display: none; margin-top: 8px; font-size: 12px; color: var(--g700); line-height: 1.8; }
-    .acct-row.expanded .acct-more { display: block; }
-    .acct-more-row { display: flex; gap: 6px; }
-    .acct-more-lbl { color: var(--g500); min-width: 80px; flex-shrink: 0; }
+    .drawer-tabs { display: flex; gap: 6px; }
+    .dtab { padding: 5px 14px; border: 1.5px solid var(--g200); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g700); transition: all 0.12s; }
+    .dtab.on { background: var(--black); border-color: var(--black); color: #fff; }
+    .drawer-body { overflow-y: auto; flex: 1; }
+    /* Dashboard */
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
+    .dash-card { background: var(--g50); border-radius: 10px; padding: 14px 16px; }
+    .dash-card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--g500); margin-bottom: 10px; }
+    .dash-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 13px; }
+    .dash-stat-row span:first-child { color: var(--g700); }
+    .dash-stat-row strong { font-size: 15px; font-weight: 700; }
+    .dash-stat-row.installed strong { color: #166534; }
+    .dash-stat-row.scheduled strong { color: #1e40af; }
+    .dash-stat-row.cancelled strong { color: #991b1b; }
+    .dash-stat-row.failed strong { color: #9a3412; }
+    .dash-stat-row.mia strong { color: #854d0e; }
+    .dash-stat-row.rate strong { color: var(--orange); }
+    .plan-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+    .plan-table td { padding: 4px 0; color: var(--g700); }
+    .plan-table td:last-child { text-align: right; font-weight: 600; color: var(--black); }
+    /* Accounts sheet */
+    .acct-filters { display: flex; gap: 6px; padding: 10px 16px; flex-wrap: wrap; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
+    .af-btn { padding: 3px 10px; border: 1.5px solid var(--g200); border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g500); transition: all 0.12s; white-space: nowrap; }
+    .af-btn.on { background: var(--black); border-color: var(--black); color: #fff; }
+    .sheet-table { width: 100%; border-collapse: collapse; }
+    .sheet-table thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g500); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--g100); position: sticky; top: 0; background: #fff; }
+    .sheet-table tbody tr { border-bottom: 1px solid var(--g100); }
+    .sheet-table tbody tr:hover { background: var(--g50); }
+    .sheet-table tbody td { padding: 5px 10px; font-size: 12px; color: var(--g700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+    .sheet-table tbody td:nth-child(2) { font-weight: 600; color: var(--black); max-width: 160px; }
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
     /* ── Toast ───────────────────────────────────────────── */
@@ -154,12 +168,20 @@
     body.dark .drawer { background: #1a1a1a; }
     body.dark .drawer-title { color: #f0f0f0; }
     body.dark .drawer-hdr { border-bottom-color: #2a2a2a; }
-    body.dark .acct-row { border-bottom-color: #2a2a2a; }
-    body.dark .acct-row:hover { background: #222; }
-    body.dark .acct-name { color: #f0f0f0; }
-    body.dark .acct-more { color: #ccc; }
-    body.dark .d-btn { background: #222; border-color: #333; color: #ccc; }
-    body.dark .d-btn.on { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
+    body.dark .dtab { background: #222; border-color: #333; color: #ccc; }
+    body.dark .dtab.on { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
+    body.dark .dash-card { background: #222; }
+    body.dark .dash-stat-row span:first-child { color: #aaa; }
+    body.dark .plan-table td { color: #aaa; }
+    body.dark .plan-table td:last-child { color: #f0f0f0; }
+    body.dark .af-btn { background: #222; border-color: #333; color: #888; }
+    body.dark .af-btn.on { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
+    body.dark .sheet-table thead th { background: #1a1a1a; border-bottom-color: #2a2a2a; }
+    body.dark .sheet-table tbody tr { border-bottom-color: #2a2a2a; }
+    body.dark .sheet-table tbody tr:hover { background: #222; }
+    body.dark .sheet-table tbody td { color: #aaa; }
+    body.dark .sheet-table tbody td:nth-child(2) { color: #f0f0f0; }
+    body.dark .acct-filters { border-bottom-color: #2a2a2a; }
   </style>
 </head>
 <body>
@@ -214,17 +236,21 @@
         <div class="drawer-title" id="drawer-title">Accounts</div>
         <button class="drawer-close" onclick="closeDrawer()">&times;</button>
       </div>
-      <div class="drawer-stats" id="drawer-stats"></div>
-      <div class="drawer-controls">
-        <button class="d-btn on" id="df-all"       onclick="setFilter('all')">All</button>
-        <button class="d-btn"    id="df-installed"  onclick="setFilter('Installed')">Installed</button>
-        <button class="d-btn"    id="df-scheduled"  onclick="setFilter('Scheduled')">Scheduled</button>
-        <button class="d-btn"    id="df-cancelled"  onclick="setFilter('Cancelled')">Cancelled</button>
-        <button class="d-btn"    id="df-failed"     onclick="setFilter('Failed')">Failed</button>
-        <button class="d-btn"    id="df-expand"     onclick="toggleExpand()">Show More</button>
+      <div class="drawer-tabs">
+        <button class="dtab on" id="tab-dashboard" onclick="setDrawerView('dashboard')">Dashboard</button>
+        <button class="dtab"    id="tab-accounts"  onclick="setDrawerView('accounts')">Accounts</button>
       </div>
     </div>
-    <div class="drawer-list" id="drawer-list"><div class="drawer-empty">Loading…</div></div>
+    <div id="acct-filters" class="acct-filters" style="display:none;">
+      <button class="af-btn on" id="af-all"       onclick="setAcctFilter('all')">All</button>
+      <button class="af-btn"    id="af-installed"  onclick="setAcctFilter('Installed')">Installed</button>
+      <button class="af-btn"    id="af-scheduled"  onclick="setAcctFilter('Scheduled')">Scheduled</button>
+      <button class="af-btn"    id="af-cancelled"  onclick="setAcctFilter('Cancelled')">Cancelled</button>
+      <button class="af-btn"    id="af-failed"     onclick="setAcctFilter('Failed')">Failed</button>
+      <button class="af-btn"    id="af-mia"        onclick="setAcctFilter('M.I.A.')">M.I.A.</button>
+      <button class="af-btn"    id="af-followup"   onclick="setAcctFilter('Follow Up')">Follow Up</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
   </div>
 </div>
 
@@ -365,7 +391,7 @@ function renderCalendar() {
     queueBlock.innerHTML=
       '<div class="day-hdr">'
         +'<div class="day-name">In Queue</div>'
-        +'<div class="queue-pill" style="margin-left:8px;">No Install Date</div>'
+        +'<div class="queue-pill" style="margin-left:8px;">Ready for Install</div>'
         +'<span class="day-right" style="font-size:11px;color:var(--g500);font-family:\'DM Mono\',monospace;">'+queued.length+' account'+(queued.length!==1?'s':'')+'</span>'
       +'</div>'
       +'<table class="sched-table"><tbody>'+qRows+'</tbody></table>';
