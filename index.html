@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v14 -->
+  <!-- v15 -->
 <title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -68,7 +68,9 @@
     .td-rep    { width: 38px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; color: var(--g500); text-align: center; }
 
     /* ── Status buttons ──────────────────────────────────── */
-    .status-btn { padding: 2px 0; width: 100%; border: none; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px; cursor: default; }
+    .sheet-table thead th:nth-child(5) { min-width: 100px; }
+    .sheet-table tbody td:nth-child(5) { min-width: 100px; }
+    .status-btn { padding: 2px 6px; width: 90px; border: none; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px; cursor: default; display: inline-block; text-align: center; }
     .s-booked    { background: #bbf0cd; color: #1a6e3a; }
     .s-available { background: #fde9b8; color: #9a6200; cursor: pointer; }
     .s-installed { background: #bbf0cd; color: #1a6e3a; }
