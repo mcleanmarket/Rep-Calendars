@@ -504,7 +504,7 @@ function renderDrawer() {
   });
   document.getElementById('drawer-stats').innerHTML=statsHtml;
 
-  var shown=_filter==='all'?sorted:sorted.filter(function(r){return (r['Status']||')===_filter;});
+  var shown=_filter==='all'?sorted:sorted.filter(function(r){return (r['Status']||'')=== _filter;});
   if(!shown.length){list.innerHTML='<div class="drawer-empty">No accounts.</div>';return;}
 
   list.innerHTML=shown.map(function(r){
