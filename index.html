@@ -8,62 +8,73 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --black:      #111111;
-      --black2:     #1a1a1a;
-      --orange:     #F5A31A;
-      --orange-lt:  #fff8ee;
-      --g50:        #f5f7fa;
-      --g100:       #eaecf0;
-      --g200:       #d8dde6;
-      --g300:       #c0c8d5;
-      --g500:       #7c8fa6;
-      --g700:       #3d4f63;
-      --red:        #ef4444;
-      --red-lt:     #fef2f2;
+      --black:     #111111;
+      --orange:    #F5A31A;
+      --orange-lt: #fff8ee;
+      --g50:       #f5f7fa;
+      --g100:      #eaecf0;
+      --g200:      #d8dde6;
+      --g300:      #c0c8d5;
+      --g500:      #7c8fa6;
+      --g700:      #3d4f63;
+      --red:       #ef4444;
+      --red-lt:    #fef2f2;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'DM Sans', sans-serif; background: #fafafa; color: var(--g700); min-height: 100vh; }
 
+    /* ── Header ──────────────────────────────────────────── */
     .hdr { background: var(--black); height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 200; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .hdr-left { display: flex; align-items: center; gap: 10px; }
     .logo-circle { width: 32px; height: 32px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0; }
     .logo-text { font-size: 20px; font-weight: 700; color: #fff; }
     .logo-text span { color: var(--orange); }
     .subtitle { font-size: 11px; color: rgba(255,255,255,0.3); margin-left: 2px; }
-    .hdr-btns { display: flex; gap: 8px; }
+    .hdr-btns { display: flex; gap: 8px; align-items: center; }
     .hbtn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); padding: 5px 13px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
     .hbtn:hover { color: white; background: rgba(255,255,255,0.13); }
 
+    /* Mode toggle */
+    .mode-toggle { display: flex; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; }
+    .mode-btn { padding: 5px 12px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; background: transparent; color: rgba(255,255,255,0.45); }
+    .mode-btn.active { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* ── Wrap ────────────────────────────────────────────── */
     .wrap { max-width: 900px; margin: 0 auto; padding: 18px 16px 100px; }
     .loading-msg { text-align: center; padding: 60px; color: var(--g500); font-size: 14px; }
 
-    /* ── Day cards — identical to old calendar ────────────── */
+    /* ── Day cards ───────────────────────────────────────── */
     .day { background: white; border-radius: 10px; border: 1px solid var(--g100); overflow: hidden; margin-bottom: 8px; }
     .day.is-today { border-color: var(--orange); border-width: 2px; }
     .day.is-past  { opacity: 0.72; }
     .day.in-queue { border-color: var(--g300); border-style: dashed; }
 
-    .day-hdr { display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-bottom: 1px solid var(--g100); background: #eceef2; }
+    .day-hdr { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-bottom: 1px solid var(--g100); background: #eceef2; }
     .day-name { font-size: 14px; font-weight: 700; color: var(--black); }
     .day-date { font-size: 11px; color: var(--g500); }
-    .today-pill { background: var(--orange); color: var(--black); font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .queue-pill { background: var(--g200); color: var(--g700); font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .today-pill  { background: var(--orange); color: var(--black); font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .queue-pill  { background: var(--g200); color: var(--g700); font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .day-right   { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .add-day-btn { background: none; border: 1px solid var(--g200); border-radius: 50%; width: 24px; height: 24px; font-size: 14px; color: var(--g200); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+    .add-day-btn:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-lt); }
 
+    /* ── Schedule table ──────────────────────────────────── */
     .sched-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .sched-table tbody tr { border-bottom: 1px solid rgba(0,0,0,0.04); }
     .sched-table tbody tr:last-child { border-bottom: none; }
     .sched-table tbody tr:hover { background: #fafafa; }
     .sched-table td { padding: 3px 10px; font-size: 13px; vertical-align: middle; border-right: 1px solid rgba(0,0,0,0.04); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sched-table td:last-child { border-right: none; }
-
     .td-status { width: 130px; }
     .td-name   { font-weight: 600; color: var(--black); }
     .td-city   { width: 110px; color: var(--g700); }
     .td-plan   { width: 110px; color: var(--g500); font-size: 12px; }
     .td-rep    { width: 38px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; color: var(--g500); text-align: center; }
 
-    /* ── Status buttons — identical to old calendar ────────── */
+    /* ── Status buttons ──────────────────────────────────── */
     .status-btn { padding: 3px 0; width: 100%; border: none; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px; cursor: default; }
+    .s-booked    { background: #bbf0cd; color: #1a6e3a; }
+    .s-available { background: #fde9b8; color: #9a6200; cursor: pointer; }
     .s-installed { background: #bbf0cd; color: #1a6e3a; }
     .s-scheduled { background: #bfdbfe; color: #1e40af; }
     .s-cancelled { background: #fecaca; color: #991b1b; }
@@ -72,6 +83,25 @@
     .s-followup  { background: #e9d5ff; color: #4c1d95; }
     .s-pending   { background: var(--g100); color: var(--g500); }
     .s-other     { background: var(--g100); color: var(--g500); }
+
+    /* ── Modals ──────────────────────────────────────────── */
+    .overlay { position: fixed; inset: 0; background: rgba(8,16,32,0.5); backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: white; border-radius: 14px; padding: 24px; width: 320px; max-width: 92vw; transform: translateY(8px) scale(0.97); transition: transform 0.18s; }
+    .overlay.open .modal { transform: translateY(0) scale(1); }
+    .modal h3 { font-size: 15px; font-weight: 700; color: var(--black); margin-bottom: 4px; }
+    .modal-sub { font-size: 12px; color: var(--g500); margin-bottom: 20px; }
+    .period-btns { display: flex; gap: 10px; }
+    .period-btn { flex: 1; padding: 14px 10px; border: 2px solid var(--g200); border-radius: 10px; background: white; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; text-align: center; }
+    .period-btn:hover { border-color: var(--orange); background: var(--orange-lt); }
+    .period-btn strong { display: block; font-size: 14px; font-weight: 700; color: var(--black); }
+    .period-btn span { display: block; font-size: 11px; color: var(--g500); margin-top: 2px; font-family: 'DM Mono', monospace; }
+    .cancel-link { display: block; text-align: center; margin-top: 14px; font-size: 12px; color: var(--g500); cursor: pointer; }
+    .cancel-link:hover { color: var(--black); }
+    .mactions { display: flex; gap: 8px; margin-top: 16px; }
+    .mbtn { flex: 1; padding: 9px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .mbtn-ghost  { background: var(--g100); color: var(--g700); }
+    .mbtn-danger { background: var(--red); color: white; }
 
     /* ── Accounts Drawer ─────────────────────────────────── */
     .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 400; display: none; }
@@ -100,13 +130,13 @@
     .acct-more-lbl { color: var(--g500); min-width: 80px; flex-shrink: 0; }
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
-    /* ── Toast / Today anchor ────────────────────────────── */
+    /* ── Toast ───────────────────────────────────────────── */
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--black); color: white; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 600; transition: transform 0.25s; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
     #today-anchor { scroll-margin-top: 70px; }
 
     /* ── Dark mode ───────────────────────────────────────── */
-    body.dark { --black: #f0f0f0; --black2: #1e1e1e; --g50: #141414; --g100: #222; --g200: #2e2e2e; --g300: #444; --g500: #888; --g700: #bbb; background: #0f0f0f; }
+    body.dark { --black: #f0f0f0; --g50: #141414; --g100: #222; --g200: #2e2e2e; --g300: #444; --g500: #888; --g700: #bbb; background: #0f0f0f; }
     body.dark .hdr { background: #0a0a0a; border-bottom-color: #222; }
     body.dark .day { background: #1a1a1a; border-color: #2a2a2a; }
     body.dark .day.is-today { border-color: var(--orange); }
@@ -120,6 +150,11 @@
     body.dark .td-city { color: #aaa; }
     body.dark .td-plan { color: #777; }
     body.dark .td-rep  { color: #666; }
+    body.dark .modal { background: #1a1a1a; }
+    body.dark .modal h3 { color: #f0f0f0; }
+    body.dark .period-btn { background: #222; border-color: #333; }
+    body.dark .period-btn strong { color: #f0f0f0; }
+    body.dark .mbtn-ghost { background: #2a2a2a; color: #ccc; }
     body.dark .drawer { background: #1a1a1a; }
     body.dark .drawer-title { color: #f0f0f0; }
     body.dark .drawer-hdr { border-bottom-color: #2a2a2a; }
@@ -140,15 +175,44 @@
     <div class="subtitle" id="cal-subtitle">Install Schedule</div>
   </div>
   <div class="hdr-btns">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-track"    onclick="setMode('track')">Track</button>
+      <button class="mode-btn"        id="mode-schedule" onclick="setMode('schedule')">Schedule</button>
+    </div>
     <button class="hbtn" id="darkBtn" onclick="toggleDark()">Dark</button>
     <button class="hbtn" onclick="scrollToToday()">Today</button>
     <button class="hbtn" id="syncBtn" onclick="syncData()">Sync</button>
-    <button class="hbtn" id="acctBtn" onclick="openDrawer()">Accounts</button>
+    <button class="hbtn" id="acctBtn" onclick="openDrawer()">Logan</button>
   </div>
 </div>
 
 <div class="wrap" id="cal-wrap">
   <div class="loading-msg" id="loading-msg">Loading…</div>
+</div>
+
+<!-- Add Slot Modal -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <h3>Add Open Slot</h3>
+    <div class="modal-sub" id="addSub"></div>
+    <div class="period-btns">
+      <button class="period-btn" onclick="submitAdd('AM')"><strong>Morning</strong><span>8:00–12:00</span></button>
+      <button class="period-btn" onclick="submitAdd('PM')"><strong>Afternoon</strong><span>1:00–5:00</span></button>
+    </div>
+    <div class="cancel-link" onclick="closeModal('addModal')">Cancel</div>
+  </div>
+</div>
+
+<!-- Remove Slot Modal -->
+<div class="overlay" id="removeModal">
+  <div class="modal">
+    <h3>Remove Slot?</h3>
+    <div class="modal-sub" id="removeSub"></div>
+    <div class="mactions">
+      <button class="mbtn mbtn-ghost"  onclick="closeModal('removeModal')">Keep It</button>
+      <button class="mbtn mbtn-danger" onclick="confirmRemove()">Remove</button>
+    </div>
+  </div>
 </div>
 
 <!-- Accounts Drawer -->
@@ -178,33 +242,14 @@
 <script>
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRtaW6dBF8JHdUhnTBvpLBUUC9Gedw-4jeDEkgBuKv_M_t-kojomJY61Yo9RrHQbE3/exec';
 
-var REPS = {
-  'logan':  'Logan McLean',
-  'brycen': 'Brycen Perkins',
-  'sami':   'Sami Layadi',
-  'connor': 'Connor McLean',
-  'jacob':  'Jacob Denver'
-};
-var REP_INITIALS = {
-  'Logan McLean':   'LM',
-  'Brycen Perkins': 'BP',
-  'Sami Layadi':    'SL',
-  'Connor McLean':  'CM',
-  'Jacob Denver':   'JD'
-};
-var STATUS_CLASS = {
-  'Installed': 's-installed',
-  'Scheduled': 's-scheduled',
-  'Cancelled': 's-cancelled',
-  'Failed':    's-failed',
-  'M.I.A.':   's-mia',
-  'Follow Up': 's-followup',
-  'Pending':   's-pending'
-};
+var REPS = { 'logan':'Logan McLean','brycen':'Brycen Perkins','sami':'Sami Layadi','connor':'Connor McLean','jacob':'Jacob Denver' };
+var REP_INITIALS = { 'Logan McLean':'LM','Brycen Perkins':'BP','Sami Layadi':'SL','Connor McLean':'CM','Jacob Denver':'JD' };
+var STATUS_CLASS = { 'Installed':'s-installed','Scheduled':'s-scheduled','Cancelled':'s-cancelled','Failed':'s-failed','M.I.A.':'s-mia','Follow Up':'s-followup','Pending':'s-pending' };
 
-var slug    = (window.location.pathname.split('/').filter(Boolean)[0] || 'logan').toLowerCase();
-var repName = REPS[slug] || 'Logan McLean';
+var slug     = (window.location.pathname.split('/').filter(Boolean)[0] || 'logan').toLowerCase();
+var repName  = REPS[slug] || 'Logan McLean';
 var repFirst = repName.split(' ')[0];
+var _mode    = 'track'; // 'track' | 'schedule'
 
 document.getElementById('cal-subtitle').textContent = repFirst + "'s Install Schedule";
 document.getElementById('drawer-title').textContent  = repFirst + "'s Accounts";
@@ -213,82 +258,82 @@ document.getElementById('acctBtn').textContent        = repFirst;
 var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var MFULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var LS_SLOTS = 'rep_cal_slots_' + slug;
 
-var _allRows  = [];  // all rows from sheet
-var _repRows  = [];  // only this rep's rows
-var _filter   = 'all';
+var _allRows = [];
+var _repRows = [];
+var _slots   = {};  // { 'YYYY-MM-DD': { AM: 1, PM: 2 } }
+var _filter  = 'all';
 var _expanded = false;
+var _pendingAdd = null;
+var _pendingRemove = null;
 
+// ── Date helpers ──────────────────────────────────────────
 function today0() { var d=new Date(); d.setHours(0,0,0,0); return d; }
 function addD(d,n) { var r=new Date(d); r.setDate(r.getDate()+n); return r; }
-function fmtKey(d) {
-  var m=String(d.getMonth()+1); if(m.length<2) m='0'+m;
-  var dd=String(d.getDate()); if(dd.length<2) dd='0'+dd;
-  return d.getFullYear()+'-'+m+'-'+dd;
-}
-function parseDate(val) {
-  if (!val) return null;
-  var d = new Date(val);
-  return isNaN(d.getTime()) ? null : d;
-}
-function fmtShort(d) {
-  if (!d) return '—';
-  return MN[d.getMonth()] + '-' + d.getDate();
-}
-function extractCity(addr) {
-  if (!addr) return '';
-  var parts = addr.split(',');
-  if (parts.length >= 2) return parts[parts.length-2].trim();
-  return addr;
-}
-function fmtPlan(p) {
-  var m = (p||'').match(/(\d+)/);
-  return m ? m[1] + ' Mbps' : (p||'');
-}
-function statusBtn(status) {
+function fmtKey(d) { var m=String(d.getMonth()+1); if(m.length<2)m='0'+m; var dd=String(d.getDate()); if(dd.length<2)dd='0'+dd; return d.getFullYear()+'-'+m+'-'+dd; }
+function parseDate(val) { if(!val) return null; var d=new Date(val); return isNaN(d.getTime())?null:d; }
+function fmtShort(d) { if(!d) return '—'; return MN[d.getMonth()]+'-'+d.getDate(); }
+function extractCity(addr) { if(!addr) return ''; var p=addr.split(','); return p.length>=2?p[p.length-2].trim():addr; }
+function fmtPlan(p) { var m=(p||'').match(/(\d+)/); return m?m[1]+' Mbps':(p||''); }
+
+// ── Status button ─────────────────────────────────────────
+function statusBtn(status, modeOverride) {
+  var mode = modeOverride || _mode;
+  if (mode === 'schedule') return '<button class="status-btn s-booked">Booked</button>';
   var cls = STATUS_CLASS[status] || 's-other';
   return '<button class="status-btn ' + cls + '">' + (status||'—') + '</button>';
 }
 
+// ── Slots (localStorage) ──────────────────────────────────
+function loadSlots() {
+  try { var s = localStorage.getItem(LS_SLOTS); _slots = s ? JSON.parse(s) : {}; } catch(e) { _slots = {}; }
+}
+function saveSlots() {
+  try { localStorage.setItem(LS_SLOTS, JSON.stringify(_slots)); } catch(e) {}
+}
+function getSlots(key, period) { return ((_slots[key]||{})[period])||0; }
+
 // ── Fetch ─────────────────────────────────────────────────
 function fetchData() {
-  document.getElementById('loading-msg') && (document.getElementById('loading-msg').style.display = 'block');
   return fetch(SCRIPT_URL)
     .then(function(r){ return r.json(); })
     .then(function(json){
       _allRows = json.data || [];
-      _repRows = _allRows.filter(function(r){ return (r['Rep Name']||'').trim() === repName; });
+      _repRows = _allRows.filter(function(r){ return (r['Rep Name']||'').trim()===repName; });
       renderCalendar();
       setTimeout(scrollToToday, 100);
     })
     .catch(function(e){
-      var el = document.getElementById('loading-msg');
-      if (el) el.textContent = 'Failed to load. Check Apps Script deployment.';
+      var el=document.getElementById('loading-msg');
+      if(el) el.textContent='Failed to load. Check Apps Script.';
       console.error(e);
     });
 }
-
 function syncData() {
-  var btn = document.getElementById('syncBtn');
-  btn.textContent = 'Syncing…';
-  btn.style.opacity = '0.5';
-  fetchData().then(function(){
-    btn.textContent = 'Sync';
-    btn.style.opacity = '1';
-    showToast('Synced');
-  });
+  var btn=document.getElementById('syncBtn');
+  btn.textContent='Syncing…'; btn.style.opacity='0.5';
+  fetchData().then(function(){ btn.textContent='Sync'; btn.style.opacity='1'; showToast('Synced'); });
+}
+
+// ── Mode toggle ───────────────────────────────────────────
+function setMode(m) {
+  _mode = m;
+  document.getElementById('mode-track').classList.toggle('active', m==='track');
+  document.getElementById('mode-schedule').classList.toggle('active', m==='schedule');
+  renderCalendar();
 }
 
 // ── Calendar render ───────────────────────────────────────
 function renderCalendar() {
   var wrap = document.getElementById('cal-wrap');
   wrap.innerHTML = '';
-
   var td = today0();
+  var rows = _mode==='track' ? _repRows : _allRows;
 
-  // Group ALL rows by install date
+  // Group by install date
   var byDate = {};
-  _allRows.forEach(function(row) {
+  rows.forEach(function(row) {
     var d = parseDate(row['Install Date']);
     if (!d) return;
     var key = fmtKey(d);
@@ -296,175 +341,199 @@ function renderCalendar() {
     byDate[key].push(row);
   });
 
-  // ── In Queue block: THIS REP's accounts with no install date ──
-  var queued = _repRows.filter(function(r){ return !parseDate(r['Install Date']); });
-  if (queued.length) {
-    var qDiv = document.createElement('div');
-    qDiv.className = 'day in-queue';
-    var qRows = queued.map(function(r){
-      var initials = REP_INITIALS[r['Rep Name']] || '';
-      return '<tr>'
-        + '<td class="td-status">' + statusBtn(r['Status']) + '</td>'
-        + '<td class="td-name">'   + (r['Customer Name']||'—') + '</td>'
-        + '<td class="td-city">'   + extractCity(r['Address']) + '</td>'
-        + '<td class="td-plan">'   + fmtPlan(r['Plan']) + '</td>'
-        + '<td class="td-rep">'    + initials + '</td>'
-        + '</tr>';
-    }).join('');
-    qDiv.innerHTML =
-      '<div class="day-hdr">'
-        + '<div class="day-name">In Queue</div>'
-        + '<div class="queue-pill" style="margin-left:8px;">No Install Date</div>'
-        + '<span style="margin-left:auto;font-size:11px;color:var(--g500);font-family:\'DM Mono\',monospace;">' + queued.length + ' account' + (queued.length!==1?'s':'') + '</span>'
-      + '</div>'
-      + '<table class="sched-table"><tbody>' + qRows + '</tbody></table>';
-    wrap.appendChild(qDiv);
+  // ── In Queue (track mode only) ────────────────────────
+  if (_mode === 'track') {
+    var queued = _repRows.filter(function(r){ return !parseDate(r['Install Date']); });
+    if (queued.length) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'day in-queue';
+      var qRows = queued.map(function(r){
+        var ini = REP_INITIALS[r['Rep Name']]||'';
+        return '<tr>'
+          +'<td class="td-status">'+statusBtn(r['Status'])+'</td>'
+          +'<td class="td-name">'+(r['Customer Name']||'—')+'</td>'
+          +'<td class="td-city">'+extractCity(r['Address'])+'</td>'
+          +'<td class="td-plan">'+fmtPlan(r['Plan'])+'</td>'
+          +'<td class="td-rep">'+ini+'</td>'
+          +'</tr>';
+      }).join('');
+      qDiv.innerHTML=
+        '<div class="day-hdr">'
+          +'<div class="day-name">In Queue</div>'
+          +'<div class="queue-pill" style="margin-left:8px;">No Install Date</div>'
+          +'<span class="day-right" style="font-size:11px;color:var(--g500);font-family:\'DM Mono\',monospace;">'+queued.length+' account'+(queued.length!==1?'s':'')+'</span>'
+        +'</div>'
+        +'<table class="sched-table"><tbody>'+qRows+'</tbody></table>';
+      wrap.appendChild(qDiv);
+    }
   }
 
-  // ── Calendar days ─────────────────────────────────────────
-  var start = addD(td, -7);
-  var end   = addD(td, 90);
-  var cur   = new Date(start);
-
+  // ── Days ──────────────────────────────────────────────
+  var start = addD(td,-7), end = addD(td,90), cur = new Date(start);
   while (cur <= end) {
     var key     = fmtKey(cur);
-    var rows    = byDate[key] || [];
-    var isToday = fmtKey(cur) === fmtKey(td);
-    var isPast  = cur < td && !isToday;
-    var isEmpty = rows.length === 0;
+    var dayRows = byDate[key] || [];
+    var isToday = fmtKey(cur)===fmtKey(td);
+    var isPast  = cur<td && !isToday;
+    var isEmpty = dayRows.length===0;
 
-    // Skip empty past days
-    if (isPast && isEmpty) { cur = addD(cur,1); continue; }
+    // Schedule mode: also check slots
+    var amSlots = _mode==='schedule' ? getSlots(key,'AM') : 0;
+    var pmSlots = _mode==='schedule' ? getSlots(key,'PM') : 0;
+    var hasSlots = amSlots+pmSlots > 0;
+
+    if (isPast && isEmpty && !hasSlots) { cur=addD(cur,1); continue; }
 
     var div = document.createElement('div');
-    div.className = 'day' + (isToday?' is-today':'') + (isPast?' is-past':'');
+    div.className = 'day'+(isToday?' is-today':'')+(isPast?' is-past':'');
     if (isToday) div.id = 'today-anchor';
 
-    var tbody = rows.map(function(r) {
-      var initials = REP_INITIALS[r['Rep Name']] || '';
-      return '<tr>'
-        + '<td class="td-status">' + statusBtn(r['Status']) + '</td>'
-        + '<td class="td-name">'   + (r['Customer Name']||'—') + '</td>'
-        + '<td class="td-city">'   + extractCity(r['Address']) + '</td>'
-        + '<td class="td-plan">'   + fmtPlan(r['Plan']) + '</td>'
-        + '<td class="td-rep">'    + initials + '</td>'
-        + '</tr>';
-    }).join('');
+    var addBtn = (!isPast && _mode==='schedule')
+      ? '<button class="add-day-btn" onclick="openAdd(\''+key+'\',\''+MN[cur.getMonth()]+' '+cur.getDate()+'\')">+</button>'
+      : '';
 
-    div.innerHTML =
+    // Build rows
+    var tbody = '';
+
+    // Open slots (schedule mode)
+    if (_mode==='schedule') {
+      for(var a=0;a<amSlots;a++) tbody+=slotRow(key,'AM','8–12 am');
+      for(var p=0;p<pmSlots;p++) tbody+=slotRow(key,'PM','1–5 pm');
+    }
+
+    // Booked rows
+    dayRows.forEach(function(r){
+      var ini = REP_INITIALS[r['Rep Name']]||'';
+      tbody+='<tr>'
+        +'<td class="td-status">'+statusBtn(r['Status'])+'</td>'
+        +'<td class="td-name">'+(r['Customer Name']||'—')+'</td>'
+        +'<td class="td-city">'+extractCity(r['Address'])+'</td>'
+        +'<td class="td-plan">'+fmtPlan(r['Plan'])+'</td>'
+        +'<td class="td-rep">'+ini+'</td>'
+        +'</tr>';
+    });
+
+    div.innerHTML=
       '<div class="day-hdr">'
-        + '<div class="day-name">' + DN[cur.getDay()] + '</div>'
-        + '<div class="day-date" style="margin-left:6px;">' + MN[cur.getMonth()] + ' ' + cur.getDate() + '</div>'
-        + (isToday ? '<div class="today-pill" style="margin-left:6px;">Today</div>' : '')
-      + '</div>'
-      + (tbody ? '<table class="sched-table"><tbody>' + tbody + '</tbody></table>' : '');
+        +'<div class="day-name">'+DN[cur.getDay()]+'</div>'
+        +'<div class="day-date" style="margin-left:6px;">'+MN[cur.getMonth()]+' '+cur.getDate()+'</div>'
+        +(isToday?'<div class="today-pill" style="margin-left:6px;">Today</div>':'')
+        +'<div class="day-right">'+addBtn+'</div>'
+      +'</div>'
+      +(tbody?'<table class="sched-table"><tbody>'+tbody+'</tbody></table>':'');
 
     wrap.appendChild(div);
-    cur = addD(cur, 1);
+    cur=addD(cur,1);
   }
 }
 
+function slotRow(key, period, label) {
+  var ds = key;
+  return '<tr class="open-row">'
+    +'<td class="td-status"><button class="status-btn s-available">Available</button></td>'
+    +'<td class="td-name" style="color:var(--g300);font-style:italic;font-weight:400;">—</td>'
+    +'<td class="td-city"></td>'
+    +'<td class="td-plan" style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--g500);">'+label+'</td>'
+    +'<td class="td-rep"><button style="background:none;border:none;cursor:pointer;color:var(--g300);font-size:12px;padding:3px 5px;" onclick="openRemove(\''+ds+'\',\''+period+'\',\''+label+'\')">&minus;</button></td>'
+    +'</tr>';
+}
+
+// ── Slot modals ───────────────────────────────────────────
+function openAdd(key, label) {
+  _pendingAdd = key;
+  document.getElementById('addSub').textContent = label;
+  openModal('addModal');
+}
+function submitAdd(period) {
+  if (!_pendingAdd) return;
+  if (!_slots[_pendingAdd]) _slots[_pendingAdd] = {};
+  _slots[_pendingAdd][period] = (_slots[_pendingAdd][period]||0)+1;
+  saveSlots(); closeModal('addModal'); renderCalendar();
+  showToast('Slot added');
+}
+function openRemove(key, period, label) {
+  _pendingRemove = {key:key, period:period};
+  document.getElementById('removeSub').textContent = 'Remove the '+label+' open slot?';
+  openModal('removeModal');
+}
+function confirmRemove() {
+  if (!_pendingRemove) return;
+  var k=_pendingRemove.key, p=_pendingRemove.period;
+  if (_slots[k] && _slots[k][p]) {
+    _slots[k][p] = Math.max(0, _slots[k][p]-1);
+    if (!_slots[k][p]) delete _slots[k][p];
+    if (!Object.keys(_slots[k]).length) delete _slots[k];
+  }
+  saveSlots(); closeModal('removeModal'); renderCalendar();
+  showToast('Slot removed');
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(function(el){
+  el.addEventListener('click',function(e){ if(e.target===el) el.classList.remove('open'); });
+});
+
 // ── Accounts Drawer ───────────────────────────────────────
-function openDrawer() {
-  document.getElementById('drawerOverlay').classList.add('open');
-  renderDrawer();
-}
-function closeDrawer() {
-  document.getElementById('drawerOverlay').classList.remove('open');
-}
+function openDrawer()  { document.getElementById('drawerOverlay').classList.add('open'); renderDrawer(); }
+function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
 
 function setFilter(f) {
   _filter = f;
   ['all','installed','scheduled','cancelled','failed'].forEach(function(k){
-    var btn = document.getElementById('df-' + k);
-    if (btn) btn.classList.toggle('on', k === f.toLowerCase() || (k==='all' && f==='all'));
+    var btn=document.getElementById('df-'+k);
+    if(btn) btn.classList.toggle('on', k===f.toLowerCase()||(k==='all'&&f==='all'));
   });
   renderDrawer();
 }
-
 function toggleExpand() {
   _expanded = !_expanded;
-  document.getElementById('df-expand').textContent = _expanded ? 'Show Less' : 'Show More';
+  document.getElementById('df-expand').textContent = _expanded?'Show Less':'Show More';
   document.getElementById('df-expand').classList.toggle('on', _expanded);
   renderDrawer();
 }
-
 function renderDrawer() {
   var list = document.getElementById('drawer-list');
-
-  // Sort newest sold first
   var sorted = _repRows.slice().sort(function(a,b){
-    return (parseDate(b['Date Sold'])||new Date(0)) - (parseDate(a['Date Sold'])||new Date(0));
+    return (parseDate(b['Date Sold'])||new Date(0))-(parseDate(a['Date Sold'])||new Date(0));
   });
-
-  // Stats
-  var counts = {};
+  var counts={};
   sorted.forEach(function(r){ var s=r['Status']||'—'; counts[s]=(counts[s]||0)+1; });
-  var statsHtml = '<strong>' + sorted.length + '</strong> total';
+  var statsHtml='<strong>'+sorted.length+'</strong> total';
   ['Installed','Scheduled','Cancelled','Failed','M.I.A.','Follow Up','Pending'].forEach(function(s){
-    if (counts[s]) statsHtml += ' &middot; <strong>' + counts[s] + '</strong> ' + s;
+    if(counts[s]) statsHtml+=' &middot; <strong>'+counts[s]+'</strong> '+s;
   });
-  document.getElementById('drawer-stats').innerHTML = statsHtml;
+  document.getElementById('drawer-stats').innerHTML=statsHtml;
 
-  // Filter
-  var shown = _filter === 'all' ? sorted : sorted.filter(function(r){ return (r['Status']||'') === _filter; });
+  var shown=_filter==='all'?sorted:sorted.filter(function(r){return (r['Status']||')===_filter;});
+  if(!shown.length){list.innerHTML='<div class="drawer-empty">No accounts.</div>';return;}
 
-  if (!shown.length) { list.innerHTML = '<div class="drawer-empty">No accounts.</div>'; return; }
-
-  list.innerHTML = shown.map(function(r) {
-    var soldDate    = parseDate(r['Date Sold']);
-    var installDate = parseDate(r['Install Date']);
-    var exp         = _expanded ? ' expanded' : '';
-    var moreRows    = [
-      ['Phone',    r['Phone']||'—'],
-      ['Email',    r['Email']||'—'],
-      ['Address',  r['Address']||'—'],
-      ['Price',    r['Price']||'—'],
-      ['Notes',    r['Notes']||'—'],
-      ['Acc ID',   r['Acc ID']||'—'],
+  list.innerHTML=shown.map(function(r){
+    var soldDate=parseDate(r['Date Sold']), installDate=parseDate(r['Install Date']);
+    var exp=_expanded?' expanded':'';
+    var moreRows=[
+      ['Phone',r['Phone']||'—'],['Email',r['Email']||'—'],
+      ['Address',r['Address']||'—'],['Price',r['Price']||'—'],
+      ['Notes',r['Notes']||'—'],['Acc ID',r['Acc ID']||'—']
     ].map(function(d){
-      return '<div class="acct-more-row"><span class="acct-more-lbl">' + d[0] + '</span><span>' + d[1] + '</span></div>';
+      return '<div class="acct-more-row"><span class="acct-more-lbl">'+d[0]+'</span><span>'+d[1]+'</span></div>';
     }).join('');
-
-    return '<div class="acct-row' + exp + '" onclick="this.classList.toggle(\'expanded\')">'
-      + '<div class="acct-main">'
-        + statusBtn(r['Status'])
-        + '<span class="acct-name">' + (r['Customer Name']||'—') + '</span>'
-      + '</div>'
-      + '<div class="acct-meta">'
-        + '<span>' + (r['Plan']||'—') + '</span>'
-        + '<span>Install: ' + fmtShort(installDate) + '</span>'
-        + '<span>Sold: ' + fmtShort(soldDate) + '</span>'
-        + (r['Acc ID'] ? '<span>#' + r['Acc ID'] + '</span>' : '')
-      + '</div>'
-      + '<div class="acct-more">' + moreRows + '</div>'
-    + '</div>';
+    return '<div class="acct-row'+exp+'" onclick="this.classList.toggle(\'expanded\')">'
+      +'<div class="acct-main">'+statusBtn(r['Status'],'track')+'<span class="acct-name">'+(r['Customer Name']||'—')+'</span></div>'
+      +'<div class="acct-meta"><span>'+(r['Plan']||'—')+'</span><span>Install: '+fmtShort(installDate)+'</span><span>Sold: '+fmtShort(soldDate)+'</span>'+(r['Acc ID']?'<span>#'+r['Acc ID']+'</span>':'')+'</div>'
+      +'<div class="acct-more">'+moreRows+'</div>'
+      +'</div>';
   }).join('');
 }
 
 // ── Helpers ───────────────────────────────────────────────
-function scrollToToday() {
-  var el = document.getElementById('today-anchor');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-function toggleDark() {
-  var isDark = document.body.classList.toggle('dark');
-  localStorage.setItem('calDark', isDark ? '1' : '0');
-  document.getElementById('darkBtn').textContent = isDark ? 'Light' : 'Dark';
-}
+function scrollToToday() { var el=document.getElementById('today-anchor'); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); }
+function toggleDark() { var isDark=document.body.classList.toggle('dark'); localStorage.setItem('calDark',isDark?'1':'0'); document.getElementById('darkBtn').textContent=isDark?'Light':'Dark'; }
 var tTimer;
-function showToast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(tTimer);
-  tTimer = setTimeout(function(){ t.classList.remove('show'); }, 2500);
-}
+function showToast(msg) { var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tTimer); tTimer=setTimeout(function(){t.classList.remove('show');},2500); }
 
-// ── Init ─────────────────────────────────────────────────
-if (localStorage.getItem('calDark') === '1') {
-  document.body.classList.add('dark');
-  document.getElementById('darkBtn').textContent = 'Light';
-}
+// ── Init ──────────────────────────────────────────────────
+if(localStorage.getItem('calDark')==='1'){document.body.classList.add('dark');document.getElementById('darkBtn').textContent='Light';}
+loadSlots();
 fetchData();
 </script>
 </body>
