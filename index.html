@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v19 -->
+  <!-- v20 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -153,7 +153,7 @@
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
     /* ── Toast ───────────────────────────────────────────── */
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--black); color: white; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 600; transition: transform 0.25s; pointer-events: none; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px); background: #111 !important; color: #fff !important; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 600; transition: transform 0.25s; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
     #today-anchor { scroll-margin-top: 70px; }
 
@@ -636,7 +636,7 @@ function renderAccounts() {
       +'<td>'+(r['Plan']||'—')+'</td>'
       +'<td>'+statusBtn(r['Status'],'track')+'</td>'
       +'<td><span class="copy-cell" onclick="copyVal(\''+rawPhone+'\',this)" title="Copy">'+fmtPhone+'</span></td>'
-      +'<td style="color:var(--g500);">'+(r['Acc ID']||'—')+'</td>'
+      +'<td style="color:var(--g500);">'+(r['Acc ID'] ? '<span class="copy-cell" onclick="copyVal(\''+r['Acc ID']+'\',this)" title="Copy">'+r['Acc ID']+'</span>' : '—')+'</td>'
       +'<td style="color:var(--g500);"><span class="copy-cell" onclick="copyVal(\''+email.replace(/'/g,"\\'")+ '\',this)" title="Copy">'+email+'</span></td>'
       +'<td style="color:var(--g500);"><span class="copy-cell" onclick="copyVal(\''+address.replace(/'/g,"\\'")+'\',this)" title="Copy">'+address+'</span></td>'
       +'<td style="color:var(--g500);white-space:normal;min-width:180px;">'+(r['Notes']||'—')+'</td>'
