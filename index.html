@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v9 -->
+  <!-- v10 -->
 <title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -124,20 +124,23 @@
     .dash-stat-row.cancelled strong { color: #991b1b; }
     .dash-stat-row.failed strong { color: #9a3412; }
     .dash-stat-row.mia strong { color: #854d0e; }
-    .dash-stat-row.rate strong { color: var(--orange); }
+    .dash-stat-row.install-rate strong { color: #166534; }
+    .dash-stat-row.cancel-rate strong  { color: #991b1b; }
+    .dash-stat-row.fail-rate strong    { color: #4c1d95; }
     .plan-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
     .plan-table td { padding: 4px 0; color: var(--g700); }
     .plan-table td:last-child { text-align: right; font-weight: 600; color: var(--black); }
     /* Accounts sheet */
-    .acct-filters { display: flex; gap: 6px; padding: 10px 16px; flex-wrap: wrap; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
+    .acct-filters { display: flex; gap: 6px; padding: 8px 12px; flex-wrap: wrap; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
     .af-btn { padding: 3px 10px; border: 1.5px solid var(--g200); border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g500); transition: all 0.12s; white-space: nowrap; }
     .af-btn.on { background: var(--black); border-color: var(--black); color: #fff; }
-    .sheet-table { width: 100%; border-collapse: collapse; }
-    .sheet-table thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g500); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--g100); position: sticky; top: 0; background: #fff; }
+    .sheet-wrap { overflow-x: auto; }
+    .sheet-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 11px; }
+    .sheet-table thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g500); padding: 5px 10px; text-align: left; border-bottom: 1px solid var(--g100); position: sticky; top: 0; background: #fff; white-space: nowrap; }
     .sheet-table tbody tr { border-bottom: 1px solid var(--g100); }
     .sheet-table tbody tr:hover { background: var(--g50); }
-    .sheet-table tbody td { padding: 5px 10px; font-size: 12px; color: var(--g700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-    .sheet-table tbody td:nth-child(2) { font-weight: 600; color: var(--black); max-width: 160px; }
+    .sheet-table tbody td { padding: 3px 10px; color: var(--g700); white-space: nowrap; font-size: 11px; }
+    .sheet-table tbody td:nth-child(2) { font-weight: 600; color: var(--black); }
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
     /* ── Toast ───────────────────────────────────────────── */
@@ -573,9 +576,9 @@ function renderDashboard() {
       +'<div class="dash-stat-row mia"><span>M.I.A.</span><strong>'+mia+'</strong></div>'
     +'</div>'
     +'<div class="dash-card"><div class="dash-card-title">Rates</div>'
-      +'<div class="dash-stat-row rate"><span>Install Rate</span><strong>'+installRate+'%</strong></div>'
-      +'<div class="dash-stat-row rate"><span>Cancel Rate</span><strong>'+cancelRate+'%</strong></div>'
-      +'<div class="dash-stat-row rate"><span>Fail Rate</span><strong>'+failRate+'%</strong></div>'
+      +'<div class="dash-stat-row install-rate"><span>Install Rate</span><strong>'+installRate+'%</strong></div>'
+      +'<div class="dash-stat-row cancel-rate"><span>Cancel Rate</span><strong>'+cancelRate+'%</strong></div>'
+      +'<div class="dash-stat-row fail-rate"><span>Fail Rate</span><strong>'+failRate+'%</strong></div>'
     +'</div>'
     +'<div class="dash-card" style="grid-column:1/-1;"><div class="dash-card-title">Plan Mix</div>'
       +'<table class="plan-table"><tbody>'+planRows+'</tbody></table>'
@@ -592,19 +595,24 @@ function renderAccounts() {
   if (!shown.length) { body.innerHTML='<div class="drawer-empty">No accounts.</div>'; return; }
   var rows = shown.map(function(r){
     var installDate=parseDate(r['Install Date']), soldDate=parseDate(r['Date Sold']);
+    var phone = (r['Phone']||'').toString().replace(/(\d{3})(\d{3})(\d{4})/,'($1) $2-$3');
     return '<tr>'
-      +'<td>'+statusBtn(r['Status'],'track')+'</td>'
-      +'<td>'+(r['Customer Name']||'—')+'</td>'
-      +'<td>'+(r['Plan']||'—')+'</td>'
-      +'<td>'+fmtShort(installDate)+'</td>'
       +'<td>'+fmtShort(soldDate)+'</td>'
-      +'<td style="color:var(--g500);">'+(r['Acc ID']||'')+'</td>'
+      +'<td>'+(r['Customer Name']||'—')+'</td>'
+      +'<td>'+fmtShort(installDate)+'</td>'
+      +'<td>'+(r['Plan']||'—')+'</td>'
+      +'<td>'+statusBtn(r['Status'],'track')+'</td>'
+      +'<td>'+(phone||'—')+'</td>'
+      +'<td style="color:var(--g500);">'+(r['Acc ID']||'—')+'</td>'
+      +'<td style="color:var(--g500);">'+(r['Email']||'—')+'</td>'
+      +'<td style="color:var(--g500);">'+(r['Address']||'—')+'</td>'
+      +'<td style="color:var(--g500);white-space:normal;min-width:180px;">'+(r['Notes']||'—')+'</td>'
       +'</tr>';
   }).join('');
   body.innerHTML =
-    '<table class="sheet-table">'
-    +'<thead><tr><th>Status</th><th>Name</th><th>Plan</th><th>Install</th><th>Sold</th><th>Acc ID</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table>';
+    '<div class="sheet-wrap"><table class="sheet-table">'
+    +'<thead><tr><th>Sold</th><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Phone</th><th>Acc ID</th><th>Email</th><th>Address</th><th>Notes</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>';
 }
 
 // ── Helpers ───────────────────────────────────────────────
