@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nextlink Install Schedule</title>
+  <!-- v3 -->
+<title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -33,11 +34,6 @@
     .hdr-btns { display: flex; gap: 8px; align-items: center; }
     .hbtn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); padding: 5px 13px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
     .hbtn:hover { color: white; background: rgba(255,255,255,0.13); }
-
-    /* Mode toggle */
-    .mode-toggle { display: flex; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; }
-    .mode-btn { padding: 5px 12px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; background: transparent; color: rgba(255,255,255,0.45); }
-    .mode-btn.active { background: rgba(255,255,255,0.15); color: #fff; }
 
     /* ── Wrap ────────────────────────────────────────────── */
     .wrap { max-width: 900px; margin: 0 auto; padding: 18px 16px 100px; }
@@ -172,13 +168,10 @@
   <div class="hdr-left">
     <div class="logo-circle">N</div>
     <div class="logo-text"><span>NEXT</span>LINK</div>
-    <div class="subtitle" id="cal-subtitle">Install Schedule</div>
   </div>
   <div class="hdr-btns">
-    <div class="mode-toggle">
-      <button class="mode-btn active" id="mode-track"    onclick="setMode('track')">Track</button>
-      <button class="mode-btn"        id="mode-schedule" onclick="setMode('schedule')">Schedule</button>
-    </div>
+    <button class="hbtn" id="mode-track"    onclick="setMode('track')">Track</button>
+    <button class="hbtn" id="mode-schedule" onclick="setMode('schedule')">Schedule</button>
     <button class="hbtn" id="darkBtn" onclick="toggleDark()">Dark</button>
     <button class="hbtn" onclick="scrollToToday()">Today</button>
     <button class="hbtn" id="syncBtn" onclick="syncData()">Sync</button>
@@ -249,9 +242,8 @@ var STATUS_CLASS = { 'Installed':'s-installed','Scheduled':'s-scheduled','Cancel
 var slug     = (window.location.pathname.split('/').filter(Boolean)[0] || 'logan').toLowerCase();
 var repName  = REPS[slug] || 'Logan McLean';
 var repFirst = repName.split(' ')[0];
-var _mode    = 'track'; // 'track' | 'schedule'
+var _mode    = 'schedule'; // 'track' | 'schedule'
 
-document.getElementById('cal-subtitle').textContent = repFirst + "'s Install Schedule";
 document.getElementById('drawer-title').textContent  = repFirst + "'s Accounts";
 document.getElementById('acctBtn').textContent        = repFirst;
 
@@ -319,9 +311,12 @@ function syncData() {
 // ── Mode toggle ───────────────────────────────────────────
 function setMode(m) {
   _mode = m;
-  document.getElementById('mode-track').classList.toggle('active', m==='track');
-  document.getElementById('mode-schedule').classList.toggle('active', m==='schedule');
+  document.getElementById('mode-track').style.color    = m==='track'    ? 'white' : '';
+  document.getElementById('mode-track').style.background = m==='track'  ? 'rgba(255,255,255,0.18)' : '';
+  document.getElementById('mode-schedule').style.color = m==='schedule' ? 'white' : '';
+  document.getElementById('mode-schedule').style.background = m==='schedule' ? 'rgba(255,255,255,0.18)' : '';
   renderCalendar();
+  setTimeout(scrollToToday, 50);
 }
 
 // ── Calendar render ───────────────────────────────────────
@@ -331,9 +326,10 @@ function renderCalendar() {
   var td = today0();
   var rows = _mode==='track' ? _repRows : _allRows;
 
-  // Group by install date
+  // Group by install date (exclude Pending)
   var byDate = {};
   rows.forEach(function(row) {
+    if ((row['Status']||'') === 'Pending') return;
     var d = parseDate(row['Install Date']);
     if (!d) return;
     var key = fmtKey(d);
@@ -343,7 +339,7 @@ function renderCalendar() {
 
   // ── In Queue (track mode only) ────────────────────────
   if (_mode === 'track') {
-    var queued = _repRows.filter(function(r){ return !parseDate(r['Install Date']); });
+    var queued = _repRows.filter(function(r){ return !parseDate(r['Install Date']) && (r['Status']||'') !== 'Pending'; });
     if (queued.length) {
       var qDiv = document.createElement('div');
       qDiv.className = 'day in-queue';
@@ -534,6 +530,7 @@ function showToast(msg) { var t=document.getElementById('toast'); t.textContent=
 // ── Init ──────────────────────────────────────────────────
 if(localStorage.getItem('calDark')==='1'){document.body.classList.add('dark');document.getElementById('darkBtn').textContent='Light';}
 loadSlots();
+setMode('schedule');
 fetchData();
 </script>
 </body>
