@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v16 -->
+  <!-- v17 -->
 <title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -190,7 +190,20 @@
     body.dark .sheet-table tbody td { color: #aaa; }
     body.dark .sheet-table tbody td:nth-child(2) { color: #f0f0f0; }
     body.dark .acct-filters { border-bottom-color: #2a2a2a; }
-  </style>
+    @media (max-width: 500px) {
+      .hdr { padding: 0 12px; }
+      .hdr-btns { gap: 5px; }
+      .hbtn { padding: 4px 9px; font-size: 11px; }
+      .mode-btn { padding: 4px 9px; font-size: 11px; }
+      .logo-text { font-size: 17px; }
+      .logo-circle { width: 28px; height: 28px; font-size: 14px; }
+      .td-status { width: 90px; }
+      .td-city   { width: 80px; }
+      .td-plan   { display: none; }
+      .wrap { padding: 12px 10px 80px; }
+      .day-hdr { padding: 5px 10px; }
+      .sched-table td { padding: 4px 7px; }
+    }
 </head>
 <body>
 
