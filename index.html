@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v7 -->
+  <!-- v9 -->
 <title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -509,55 +509,102 @@ document.querySelectorAll('.overlay').forEach(function(el){
 });
 
 // ── Accounts Drawer ───────────────────────────────────────
-function openDrawer()  { document.getElementById('drawerOverlay').classList.add('open'); renderDrawer(); }
-function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
+var _drawerView = 'dashboard';
+var _acctFilter = 'all';
 
-function setFilter(f) {
-  _filter = f;
-  ['all','installed','scheduled','cancelled','failed'].forEach(function(k){
-    var btn=document.getElementById('df-'+k);
-    if(btn) btn.classList.toggle('on', k===f.toLowerCase()||(k==='all'&&f==='all'));
-  });
+function openDrawer() {
+  document.getElementById('drawerOverlay').classList.add('open');
   renderDrawer();
 }
-function toggleExpand() {
-  _expanded = !_expanded;
-  document.getElementById('df-expand').textContent = _expanded?'Show Less':'Show More';
-  document.getElementById('df-expand').classList.toggle('on', _expanded);
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+}
+function setDrawerView(v) {
+  _drawerView = v;
+  document.getElementById('tab-dashboard').classList.toggle('on', v==='dashboard');
+  document.getElementById('tab-accounts').classList.toggle('on', v==='accounts');
+  document.getElementById('acct-filters').style.display = v==='accounts' ? 'flex' : 'none';
+  renderDrawer();
+}
+function setAcctFilter(f) {
+  _acctFilter = f;
+  var map = { 'all':'all','Installed':'installed','Scheduled':'scheduled','Cancelled':'cancelled','Failed':'failed','M.I.A.':'mia','Follow Up':'followup' };
+  Object.keys(map).forEach(function(k){
+    var btn = document.getElementById('af-'+map[k]);
+    if (btn) btn.classList.toggle('on', k===f);
+  });
   renderDrawer();
 }
 function renderDrawer() {
-  var list = document.getElementById('drawer-list');
+  if (_drawerView==='dashboard') renderDashboard();
+  else renderAccounts();
+}
+function renderDashboard() {
+  var body = document.getElementById('drawer-body');
+  if (!body) return;
+  var counts = {};
+  _repRows.forEach(function(r){ var s=r['Status']||'Unknown'; counts[s]=(counts[s]||0)+1; });
+  var total=_repRows.length, installed=counts['Installed']||0, scheduled=counts['Scheduled']||0,
+      cancelled=counts['Cancelled']||0, failed=counts['Failed']||0, mia=counts['M.I.A.']||0,
+      followup=counts['Follow Up']||0, pending=counts['Pending']||0;
+  // Install rate: Installed / (Installed + FollowUp + Failed + Cancelled + MIA)
+  var installDenom = installed + followup + failed + cancelled + mia;
+  var installRate  = installDenom>0 ? Math.round(installed/installDenom*100) : 0;
+  // Cancel rate: Cancelled / everything except Pending
+  var cancelDenom  = total - pending;
+  var cancelRate   = cancelDenom>0 ? Math.round(cancelled/cancelDenom*100) : 0;
+  // Fail rate: Failed / (Installed + Failed) — of accounts that reached install, % that failed
+  var failDenom    = installed + failed;
+  var failRate     = failDenom>0 ? Math.round(failed/failDenom*100) : 0;
+  var planCounts = {};
+  _repRows.forEach(function(r){ var p=r['Plan']||'—'; planCounts[p]=(planCounts[p]||0)+1; });
+  var planRows = Object.keys(planCounts).sort().map(function(p){
+    var pct=total>0?Math.round(planCounts[p]/total*100):0;
+    return '<tr><td>'+p+'</td><td>'+planCounts[p]+'</td><td style="text-align:right;color:var(--g500);">'+pct+'%</td></tr>';
+  }).join('');
+  body.innerHTML =
+    '<div class="dash-grid">'
+    +'<div class="dash-card"><div class="dash-card-title">Performance</div>'
+      +'<div class="dash-stat-row"><span>Total Sold</span><strong>'+total+'</strong></div>'
+      +'<div class="dash-stat-row installed"><span>Installed</span><strong>'+installed+'</strong></div>'
+      +'<div class="dash-stat-row scheduled"><span>Scheduled</span><strong>'+scheduled+'</strong></div>'
+      +'<div class="dash-stat-row cancelled"><span>Cancelled</span><strong>'+cancelled+'</strong></div>'
+      +'<div class="dash-stat-row failed"><span>Failed</span><strong>'+failed+'</strong></div>'
+      +'<div class="dash-stat-row mia"><span>M.I.A.</span><strong>'+mia+'</strong></div>'
+    +'</div>'
+    +'<div class="dash-card"><div class="dash-card-title">Rates</div>'
+      +'<div class="dash-stat-row rate"><span>Install Rate</span><strong>'+installRate+'%</strong></div>'
+      +'<div class="dash-stat-row rate"><span>Cancel Rate</span><strong>'+cancelRate+'%</strong></div>'
+      +'<div class="dash-stat-row rate"><span>Fail Rate</span><strong>'+failRate+'%</strong></div>'
+    +'</div>'
+    +'<div class="dash-card" style="grid-column:1/-1;"><div class="dash-card-title">Plan Mix</div>'
+      +'<table class="plan-table"><tbody>'+planRows+'</tbody></table>'
+    +'</div>'
+    +'</div>';
+}
+function renderAccounts() {
+  var body = document.getElementById('drawer-body');
+  if (!body) return;
   var sorted = _repRows.slice().sort(function(a,b){
     return (parseDate(b['Date Sold'])||new Date(0))-(parseDate(a['Date Sold'])||new Date(0));
   });
-  var counts={};
-  sorted.forEach(function(r){ var s=r['Status']||'—'; counts[s]=(counts[s]||0)+1; });
-  var statsHtml='<strong>'+sorted.length+'</strong> total';
-  ['Installed','Scheduled','Cancelled','Failed','M.I.A.','Follow Up','Pending'].forEach(function(s){
-    if(counts[s]) statsHtml+=' &middot; <strong>'+counts[s]+'</strong> '+s;
-  });
-  document.getElementById('drawer-stats').innerHTML=statsHtml;
-
-  var shown=_filter==='all'?sorted:sorted.filter(function(r){return (r['Status']||'')=== _filter;});
-  if(!shown.length){list.innerHTML='<div class="drawer-empty">No accounts.</div>';return;}
-
-  list.innerHTML=shown.map(function(r){
-    var soldDate=parseDate(r['Date Sold']), installDate=parseDate(r['Install Date']);
-    var exp=_expanded?' expanded':'';
-    var moreRows=[
-      ['Phone',r['Phone']||'—'],['Email',r['Email']||'—'],
-      ['Address',r['Address']||'—'],['Price',r['Price']||'—'],
-      ['Notes',r['Notes']||'—'],['Acc ID',r['Acc ID']||'—']
-    ].map(function(d){
-      return '<div class="acct-more-row"><span class="acct-more-lbl">'+d[0]+'</span><span>'+d[1]+'</span></div>';
-    }).join('');
-    return '<div class="acct-row'+exp+'" onclick="this.classList.toggle(\'expanded\')">'
-      +'<div class="acct-main">'+statusBtn(r['Status'],'track')+'<span class="acct-name">'+(r['Customer Name']||'—')+'</span></div>'
-      +'<div class="acct-meta"><span>'+(r['Plan']||'—')+'</span><span>Install: '+fmtShort(installDate)+'</span><span>Sold: '+fmtShort(soldDate)+'</span>'+(r['Acc ID']?'<span>#'+r['Acc ID']+'</span>':'')+'</div>'
-      +'<div class="acct-more">'+moreRows+'</div>'
-      +'</div>';
+  var shown = _acctFilter==='all' ? sorted : sorted.filter(function(r){ return (r['Status']||'')===_acctFilter; });
+  if (!shown.length) { body.innerHTML='<div class="drawer-empty">No accounts.</div>'; return; }
+  var rows = shown.map(function(r){
+    var installDate=parseDate(r['Install Date']), soldDate=parseDate(r['Date Sold']);
+    return '<tr>'
+      +'<td>'+statusBtn(r['Status'],'track')+'</td>'
+      +'<td>'+(r['Customer Name']||'—')+'</td>'
+      +'<td>'+(r['Plan']||'—')+'</td>'
+      +'<td>'+fmtShort(installDate)+'</td>'
+      +'<td>'+fmtShort(soldDate)+'</td>'
+      +'<td style="color:var(--g500);">'+(r['Acc ID']||'')+'</td>'
+      +'</tr>';
   }).join('');
+  body.innerHTML =
+    '<table class="sheet-table">'
+    +'<thead><tr><th>Status</th><th>Name</th><th>Plan</th><th>Install</th><th>Sold</th><th>Acc ID</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table>';
 }
 
 // ── Helpers ───────────────────────────────────────────────
