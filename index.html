@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v3 -->
+  <!-- v4 -->
 <title>Nextlink Install Schedule</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -170,8 +170,7 @@
     <div class="logo-text"><span>NEXT</span>LINK</div>
   </div>
   <div class="hdr-btns">
-    <button class="hbtn" id="mode-track"    onclick="setMode('track')">Track</button>
-    <button class="hbtn" id="mode-schedule" onclick="setMode('schedule')">Schedule</button>
+    <button class="hbtn" id="modeBtn" onclick="cycleMode()">Schedule</button>
     <button class="hbtn" id="darkBtn" onclick="toggleDark()">Dark</button>
     <button class="hbtn" onclick="scrollToToday()">Today</button>
     <button class="hbtn" id="syncBtn" onclick="syncData()">Sync</button>
@@ -242,7 +241,7 @@ var STATUS_CLASS = { 'Installed':'s-installed','Scheduled':'s-scheduled','Cancel
 var slug     = (window.location.pathname.split('/').filter(Boolean)[0] || 'logan').toLowerCase();
 var repName  = REPS[slug] || 'Logan McLean';
 var repFirst = repName.split(' ')[0];
-var _mode    = 'schedule'; // 'track' | 'schedule'
+var _mode    = 'schedule'; // 'schedule' | 'myschedule' | 'track'
 
 document.getElementById('drawer-title').textContent  = repFirst + "'s Accounts";
 document.getElementById('acctBtn').textContent        = repFirst;
@@ -272,7 +271,7 @@ function fmtPlan(p) { var m=(p||'').match(/(\d+)/); return m?m[1]+' Mbps':(p||''
 // ── Status button ─────────────────────────────────────────
 function statusBtn(status, modeOverride) {
   var mode = modeOverride || _mode;
-  if (mode === 'schedule') return '<button class="status-btn s-booked">Booked</button>';
+  if (mode === 'schedule' || mode === 'myschedule') return '<button class="status-btn s-booked">Booked</button>';
   var cls = STATUS_CLASS[status] || 's-other';
   return '<button class="status-btn ' + cls + '">' + (status||'—') + '</button>';
 }
@@ -309,12 +308,20 @@ function syncData() {
 }
 
 // ── Mode toggle ───────────────────────────────────────────
+var MODE_CYCLE = ['schedule', 'myschedule', 'track'];
+var MODE_LABELS = { 'schedule': 'Schedule', 'myschedule': 'My Schedule', 'track': 'Track' };
+
+function cycleMode() {
+  var idx = MODE_CYCLE.indexOf(_mode);
+  _mode = MODE_CYCLE[(idx + 1) % MODE_CYCLE.length];
+  document.getElementById('modeBtn').textContent = MODE_LABELS[_mode];
+  renderCalendar();
+  setTimeout(scrollToToday, 50);
+}
+
 function setMode(m) {
   _mode = m;
-  document.getElementById('mode-track').style.color    = m==='track'    ? 'white' : '';
-  document.getElementById('mode-track').style.background = m==='track'  ? 'rgba(255,255,255,0.18)' : '';
-  document.getElementById('mode-schedule').style.color = m==='schedule' ? 'white' : '';
-  document.getElementById('mode-schedule').style.background = m==='schedule' ? 'rgba(255,255,255,0.18)' : '';
+  document.getElementById('modeBtn').textContent = MODE_LABELS[m];
   renderCalendar();
   setTimeout(scrollToToday, 50);
 }
@@ -324,7 +331,7 @@ function renderCalendar() {
   var wrap = document.getElementById('cal-wrap');
   wrap.innerHTML = '';
   var td = today0();
-  var rows = _mode==='track' ? _repRows : _allRows;
+  var rows = (_mode==='track' || _mode==='myschedule') ? _repRows : _allRows;
 
   // Group by install date (exclude Pending)
   var byDate = {};
@@ -379,6 +386,12 @@ function renderCalendar() {
     var hasSlots = amSlots+pmSlots > 0;
 
     if (isPast && isEmpty && !hasSlots) { cur=addD(cur,1); continue; }
+
+    // Insert In Queue block right before today
+    if (isToday && !queueInserted && queueBlock) {
+      wrap.appendChild(queueBlock);
+      queueInserted = true;
+    }
 
     var div = document.createElement('div');
     div.className = 'day'+(isToday?' is-today':'')+(isPast?' is-past':'');
