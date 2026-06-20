@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v23 -->
+  <!-- v25 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -152,17 +152,18 @@
 
     /* Payroll table — condensed to fit mobile, 5 columns */
     .payroll-table { width: 100%; min-width: 0; table-layout: fixed; }
-    .payroll-table th, .payroll-table td { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { width: 26%; font-weight: 600; color: var(--black); }
-    .payroll-table th:nth-child(2), .payroll-table td:nth-child(2) { width: 16%; }
-    .payroll-table th:nth-child(3), .payroll-table td:nth-child(3) { width: 18%; }
-    .payroll-table th:nth-child(4), .payroll-table td:nth-child(4) { width: 20%; }
-    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { width: 20%; }
-    .paid-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+    .payroll-table th, .payroll-table td { padding: 5px 4px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { width: 30%; font-weight: 600; color: var(--black); padding-left: 8px; }
+    .payroll-table th:nth-child(2), .payroll-table td:nth-child(2) { width: 14%; }
+    .payroll-table th:nth-child(3), .payroll-table td:nth-child(3) { width: 16%; }
+    .payroll-table th:nth-child(4), .payroll-table td:nth-child(4) { width: 18%; }
+    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { width: 22%; padding-right: 8px; }
+    .payroll-table .status-btn { font-size: 9px; padding: 2px 0; width: 100% !important; }
+    /* Paid badge — same light-bg/dark-text style as Status pills, consistent in both themes */
+    .payroll-table .status-btn { width: 100%; }
+    .paid-badge { display: block; width: 100%; box-sizing: border-box; padding: 2px 0; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.3px; text-align: center; }
     .paid-yes { background: #bbf0cd; color: #1a6e3a; }
     .paid-no  { background: #fed7aa; color: #9a3412; }
-    body.dark .paid-yes { background: #14532d; color: #86efac; }
-    body.dark .paid-no  { background: #7c2d12; color: #fdba74; }
     .copy-cell:hover { color: var(--black); }
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
@@ -208,6 +209,17 @@
     body.dark .sheet-table tbody td { color: #aaa; }
     body.dark .sheet-table tbody td:nth-child(2) { color: #f0f0f0; }
     body.dark .acct-filters { border-bottom-color: #2a2a2a; }
+    /* Dark-mode status & paid badge colors — saturated bg, light text */
+    body.dark .s-booked,
+    body.dark .s-installed { background: #14532d; color: #86efac; }
+    body.dark .s-scheduled { background: #1e3a8a; color: #93c5fd; }
+    body.dark .s-cancelled { background: #7f1d1d; color: #fca5a5; }
+    body.dark .s-failed    { background: #7c2d12; color: #fdba74; }
+    body.dark .s-mia       { background: #713f12; color: #fde047; }
+    body.dark .s-followup  { background: #4c1d95; color: #d8b4fe; }
+    body.dark .s-other     { background: #2a2a2a; color: #999; }
+    body.dark .paid-yes { background: #14532d; color: #86efac; }
+    body.dark .paid-no  { background: #7c2d12; color: #fdba74; }
     body.city-hidden .td-city { display: none; }
     body.city-hidden .td-plan { width: 220px; }
 
@@ -563,7 +575,7 @@ document.querySelectorAll('.overlay').forEach(function(el){
 
 // ── Accounts Drawer ───────────────────────────────────────
 var _drawerView = 'dashboard';
-var _acctFilter = 'all';
+var _acctFilter = ['all']; // array of selected statuses, or ['all']
 var _payrollFilter = 'all';
 
 function openDrawer() {
@@ -582,12 +594,21 @@ function setDrawerView(v) {
   document.getElementById('payroll-filters').style.display = v==='payroll' ? 'flex' : 'none';
   renderDrawer();
 }
+var ACCT_FILTER_MAP = { 'all':'all','Installed':'installed','Scheduled':'scheduled','Cancelled':'cancelled','Failed':'failed','M.I.A.':'mia','Follow Up':'followup' };
 function setAcctFilter(f) {
-  _acctFilter = f;
-  var map = { 'all':'all','Installed':'installed','Scheduled':'scheduled','Cancelled':'cancelled','Failed':'failed','M.I.A.':'mia','Follow Up':'followup' };
-  Object.keys(map).forEach(function(k){
-    var btn = document.getElementById('af-'+map[k]);
-    if (btn) btn.classList.toggle('on', k===f);
+  if (f === 'all') {
+    _acctFilter = ['all'];
+  } else {
+    var idx = _acctFilter.indexOf('all');
+    if (idx > -1) _acctFilter.splice(idx, 1);
+    var pos = _acctFilter.indexOf(f);
+    if (pos > -1) { _acctFilter.splice(pos, 1); }
+    else { _acctFilter.push(f); }
+    if (_acctFilter.length === 0) _acctFilter = ['all'];
+  }
+  Object.keys(ACCT_FILTER_MAP).forEach(function(k){
+    var btn = document.getElementById('af-'+ACCT_FILTER_MAP[k]);
+    if (btn) btn.classList.toggle('on', _acctFilter.indexOf(k) > -1);
   });
   renderDrawer();
 }
@@ -653,7 +674,7 @@ function renderAccounts() {
   var sorted = _repRows.slice().sort(function(a,b){
     return (parseDate(b['Date Sold'])||new Date(0))-(parseDate(a['Date Sold'])||new Date(0));
   });
-  var shown = _acctFilter==='all' ? sorted : sorted.filter(function(r){ return (r['Status']||'')===_acctFilter; });
+  var shown = (_acctFilter.indexOf('all')>-1) ? sorted : sorted.filter(function(r){ return _acctFilter.indexOf(r['Status']||'') > -1; });
   if (!shown.length) { body.innerHTML='<div class="drawer-empty">No accounts.</div>'; return; }
   var rows = shown.map(function(r){
     var installDate=parseDate(r['Install Date']), soldDate=parseDate(r['Date Sold']);
