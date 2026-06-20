@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v27 -->
+  <!-- v28 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -150,13 +150,11 @@
     .accounts-sheet tbody td:nth-child(2) { font-weight: 600; color: var(--black); max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
     .copy-cell { cursor: pointer; transition: color 0.1s; }
 
-    /* Payroll table — condensed to fit mobile, 5 columns */
-    .payroll-table { width: 100%; min-width: 0; table-layout: auto; }
+    /* Payroll table — condensed to fit mobile, 5 columns, widths locked via colgroup */
+    .payroll-table { width: 100%; min-width: 0; table-layout: fixed; }
     .payroll-table th, .payroll-table td { padding: 5px 4px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { max-width: 62px; font-weight: 600; color: var(--black); padding-left: 8px; }
-    .payroll-table th:nth-child(2), .payroll-table td:nth-child(2) { max-width: 44px; }
-    .payroll-table th:nth-child(3), .payroll-table td:nth-child(3) { max-width: 54px; }
-    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { max-width: 52px; padding-right: 8px; }
+    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { font-weight: 600; color: var(--black); padding-left: 8px; }
+    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { padding-right: 8px; }
     .payroll-table .status-btn { font-size: 9px; padding: 2px 0; width: 100% !important; }
     /* Paid badge — same light-bg/dark-text style as Status pills, consistent in both themes */
     .payroll-table .status-btn { width: 100%; }
@@ -729,6 +727,7 @@ function renderPayroll() {
   }).join('');
   body.innerHTML =
     '<table class="sheet-table payroll-table">'
+    +'<colgroup><col style="width:22%"><col style="width:16%"><col style="width:20%"><col style="width:24%"><col style="width:18%"></colgroup>'
     +'<thead><tr><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Paid?</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table>';
 }
