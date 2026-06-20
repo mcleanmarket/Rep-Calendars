@@ -719,7 +719,7 @@ function renderPayroll() {
     var paid = (r['Paid? Rep']||'').toString().trim().toUpperCase();
     var paidHtml = paid==='Y'
       ? '<span class="paid-badge paid-yes">Paid</span>'
-      : '<span class="paid-badge paid-no">Unpaid</span>';
+      : '<span class="paid-badge paid-no">Pending</span>';
     return '<tr>'
       +'<td>'+(r['Customer Name']||'—')+'</td>'
       +'<td>'+fmtShort(installDate)+'</td>'
