@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v20 -->
+  <!-- v21 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -269,6 +269,7 @@
       <div class="drawer-tabs">
         <button class="dtab on" id="tab-dashboard" onclick="setDrawerView('dashboard')">Dashboard</button>
         <button class="dtab"    id="tab-accounts"  onclick="setDrawerView('accounts')">Accounts</button>
+        <button class="dtab"    id="tab-payroll"   onclick="setDrawerView('payroll')">Payroll</button>
       </div>
     </div>
     <div id="acct-filters" class="acct-filters" style="display:none;">
@@ -556,6 +557,7 @@ function setDrawerView(v) {
   _drawerView = v;
   document.getElementById('tab-dashboard').classList.toggle('on', v==='dashboard');
   document.getElementById('tab-accounts').classList.toggle('on', v==='accounts');
+  document.getElementById('tab-payroll').classList.toggle('on', v==='payroll');
   document.getElementById('acct-filters').style.display = v==='accounts' ? 'flex' : 'none';
   renderDrawer();
 }
@@ -570,7 +572,8 @@ function setAcctFilter(f) {
 }
 function renderDrawer() {
   if (_drawerView==='dashboard') renderDashboard();
-  else renderAccounts();
+  else if (_drawerView==='accounts') renderAccounts();
+  else renderPayroll();
 }
 function renderDashboard() {
   var body = document.getElementById('drawer-body');
@@ -645,6 +648,34 @@ function renderAccounts() {
   body.innerHTML =
     '<div class="sheet-wrap"><table class="sheet-table">'
     +'<thead><tr><th>Sold</th><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Phone</th><th>Acc ID</th><th>Email</th><th>Address</th><th>Notes</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>';
+}
+
+function renderPayroll() {
+  var body = document.getElementById('drawer-body');
+  if (!body) return;
+  var installed = _repRows.filter(function(r){ return (r['Status']||'')==='Installed'; });
+  var sorted = installed.slice().sort(function(a,b){
+    return (parseDate(b['Install Date'])||new Date(0))-(parseDate(a['Install Date'])||new Date(0));
+  });
+  if (!sorted.length) { body.innerHTML='<div class="drawer-empty">No installed accounts.</div>'; return; }
+  var rows = sorted.map(function(r){
+    var installDate = parseDate(r['Install Date']);
+    var paid = (r['Paid? Rep']||'').toString().trim().toUpperCase();
+    var paidHtml = paid==='Y'
+      ? '<span style="color:#166534;font-weight:700;">Paid</span>'
+      : '<span style="color:#9a3412;font-weight:700;">Unpaid</span>';
+    return '<tr>'
+      +'<td>'+(r['Customer Name']||'—')+'</td>'
+      +'<td>'+fmtShort(installDate)+'</td>'
+      +'<td>'+(r['Plan']||'—')+'</td>'
+      +'<td>'+statusBtn(r['Status'],'track')+'</td>'
+      +'<td>'+paidHtml+'</td>'
+      +'</tr>';
+  }).join('');
+  body.innerHTML =
+    '<div class="sheet-wrap"><table class="sheet-table">'
+    +'<thead><tr><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Paid?</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 }
 
