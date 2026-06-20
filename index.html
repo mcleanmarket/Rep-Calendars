@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v21 -->
+  <!-- v23 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -149,6 +149,20 @@
     .sheet-table tbody td { padding: 2px 8px; color: var(--g700); white-space: nowrap; font-size: 11px; line-height: 1.4; }
     .sheet-table tbody td:nth-child(2) { font-weight: 600; color: var(--black); max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
     .copy-cell { cursor: pointer; transition: color 0.1s; }
+
+    /* Payroll table — condensed to fit mobile, 5 columns */
+    .payroll-table { width: 100%; min-width: 0; table-layout: fixed; }
+    .payroll-table th, .payroll-table td { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { width: 26%; font-weight: 600; color: var(--black); }
+    .payroll-table th:nth-child(2), .payroll-table td:nth-child(2) { width: 16%; }
+    .payroll-table th:nth-child(3), .payroll-table td:nth-child(3) { width: 18%; }
+    .payroll-table th:nth-child(4), .payroll-table td:nth-child(4) { width: 20%; }
+    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { width: 20%; }
+    .paid-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+    .paid-yes { background: #bbf0cd; color: #1a6e3a; }
+    .paid-no  { background: #fed7aa; color: #9a3412; }
+    body.dark .paid-yes { background: #14532d; color: #86efac; }
+    body.dark .paid-no  { background: #7c2d12; color: #fdba74; }
     .copy-cell:hover { color: var(--black); }
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
@@ -280,6 +294,11 @@
       <button class="af-btn"    id="af-failed"     onclick="setAcctFilter('Failed')">Failed</button>
       <button class="af-btn"    id="af-mia"        onclick="setAcctFilter('M.I.A.')">M.I.A.</button>
       <button class="af-btn"    id="af-followup"   onclick="setAcctFilter('Follow Up')">Follow Up</button>
+    </div>
+    <div id="payroll-filters" class="acct-filters" style="display:none;">
+      <button class="af-btn on" id="pf-all"    onclick="setPayrollFilter('all')">All</button>
+      <button class="af-btn"    id="pf-paid"    onclick="setPayrollFilter('paid')">Paid</button>
+      <button class="af-btn"    id="pf-pending" onclick="setPayrollFilter('pending')">Pending</button>
     </div>
     <div class="drawer-body" id="drawer-body"></div>
   </div>
@@ -545,6 +564,7 @@ document.querySelectorAll('.overlay').forEach(function(el){
 // ── Accounts Drawer ───────────────────────────────────────
 var _drawerView = 'dashboard';
 var _acctFilter = 'all';
+var _payrollFilter = 'all';
 
 function openDrawer() {
   document.getElementById('drawerOverlay').classList.add('open');
@@ -559,6 +579,7 @@ function setDrawerView(v) {
   document.getElementById('tab-accounts').classList.toggle('on', v==='accounts');
   document.getElementById('tab-payroll').classList.toggle('on', v==='payroll');
   document.getElementById('acct-filters').style.display = v==='accounts' ? 'flex' : 'none';
+  document.getElementById('payroll-filters').style.display = v==='payroll' ? 'flex' : 'none';
   renderDrawer();
 }
 function setAcctFilter(f) {
@@ -566,6 +587,14 @@ function setAcctFilter(f) {
   var map = { 'all':'all','Installed':'installed','Scheduled':'scheduled','Cancelled':'cancelled','Failed':'failed','M.I.A.':'mia','Follow Up':'followup' };
   Object.keys(map).forEach(function(k){
     var btn = document.getElementById('af-'+map[k]);
+    if (btn) btn.classList.toggle('on', k===f);
+  });
+  renderDrawer();
+}
+function setPayrollFilter(f) {
+  _payrollFilter = f;
+  ['all','paid','pending'].forEach(function(k){
+    var btn = document.getElementById('pf-'+k);
     if (btn) btn.classList.toggle('on', k===f);
   });
   renderDrawer();
@@ -655,16 +684,21 @@ function renderPayroll() {
   var body = document.getElementById('drawer-body');
   if (!body) return;
   var installed = _repRows.filter(function(r){ return (r['Status']||'')==='Installed'; });
+  if (_payrollFilter === 'paid') {
+    installed = installed.filter(function(r){ return (r['Paid? Rep']||'').toString().trim().toUpperCase()==='Y'; });
+  } else if (_payrollFilter === 'pending') {
+    installed = installed.filter(function(r){ return (r['Paid? Rep']||'').toString().trim().toUpperCase()!=='Y'; });
+  }
   var sorted = installed.slice().sort(function(a,b){
     return (parseDate(b['Install Date'])||new Date(0))-(parseDate(a['Install Date'])||new Date(0));
   });
-  if (!sorted.length) { body.innerHTML='<div class="drawer-empty">No installed accounts.</div>'; return; }
+  if (!sorted.length) { body.innerHTML='<div class="drawer-empty">No accounts.</div>'; return; }
   var rows = sorted.map(function(r){
     var installDate = parseDate(r['Install Date']);
     var paid = (r['Paid? Rep']||'').toString().trim().toUpperCase();
     var paidHtml = paid==='Y'
-      ? '<span style="color:#166534;font-weight:700;">Paid</span>'
-      : '<span style="color:#9a3412;font-weight:700;">Unpaid</span>';
+      ? '<span class="paid-badge paid-yes">Paid</span>'
+      : '<span class="paid-badge paid-no">Unpaid</span>';
     return '<tr>'
       +'<td>'+(r['Customer Name']||'—')+'</td>'
       +'<td>'+fmtShort(installDate)+'</td>'
@@ -674,9 +708,9 @@ function renderPayroll() {
       +'</tr>';
   }).join('');
   body.innerHTML =
-    '<div class="sheet-wrap"><table class="sheet-table">'
+    '<table class="sheet-table payroll-table">'
     +'<thead><tr><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Paid?</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table></div>';
+    +'<tbody>'+rows+'</tbody></table>';
 }
 
 function copyVal(text, el) {
