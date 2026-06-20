@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v26 -->
+  <!-- v27 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -147,17 +147,16 @@
     .sheet-table tbody tr { border-bottom: 1px solid var(--g100); }
     .sheet-table tbody tr:hover { background: var(--g50); }
     .sheet-table tbody td { padding: 2px 8px; color: var(--g700); white-space: nowrap; font-size: 11px; line-height: 1.4; }
-    .sheet-table tbody td:nth-child(2) { font-weight: 600; color: var(--black); max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+    .accounts-sheet tbody td:nth-child(2) { font-weight: 600; color: var(--black); max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
     .copy-cell { cursor: pointer; transition: color 0.1s; }
 
     /* Payroll table — condensed to fit mobile, 5 columns */
-    .payroll-table { width: 100%; min-width: 0; table-layout: fixed; }
-    .payroll-table th, .payroll-table td { padding: 5px 4px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { width: 30%; font-weight: 600; color: var(--black); padding-left: 8px; }
-    .payroll-table th:nth-child(2), .payroll-table td:nth-child(2) { width: 14%; }
-    .payroll-table th:nth-child(3), .payroll-table td:nth-child(3) { width: 16%; }
-    .payroll-table th:nth-child(4), .payroll-table td:nth-child(4) { width: 18%; }
-    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { width: 22%; padding-right: 8px; }
+    .payroll-table { width: 100%; min-width: 0; table-layout: auto; }
+    .payroll-table th, .payroll-table td { padding: 5px 4px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .payroll-table th:nth-child(1), .payroll-table td:nth-child(1) { max-width: 62px; font-weight: 600; color: var(--black); padding-left: 8px; }
+    .payroll-table th:nth-child(2), .payroll-table td:nth-child(2) { max-width: 44px; }
+    .payroll-table th:nth-child(3), .payroll-table td:nth-child(3) { max-width: 54px; }
+    .payroll-table th:nth-child(5), .payroll-table td:nth-child(5) { max-width: 52px; padding-right: 8px; }
     .payroll-table .status-btn { font-size: 9px; padding: 2px 0; width: 100% !important; }
     /* Paid badge — same light-bg/dark-text style as Status pills, consistent in both themes */
     .payroll-table .status-btn { width: 100%; }
@@ -696,7 +695,7 @@ function renderAccounts() {
       +'</tr>';
   }).join('');
   body.innerHTML =
-    '<div class="sheet-wrap"><table class="sheet-table">'
+    '<div class="sheet-wrap"><table class="sheet-table accounts-sheet">'
     +'<thead><tr><th>Sold</th><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Phone</th><th>Acc ID</th><th>Email</th><th>Address</th><th>Notes</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 }
