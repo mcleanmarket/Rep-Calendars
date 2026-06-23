@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v41 -->
+  <!-- v45 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -846,9 +846,9 @@ function renderPayroll() {
 
 // ── Referrals ─────────────────────────────────────────────
 var REF_TEXTS = {
-  R1: 'Placeholder 1',
-  R2: 'Placeholder 2',
-  R3: 'Placeholder 3'
+  R1: 'hope everything went well with the install? It\'s ' + repFirst + '\n\nBTW — You get $100 for referring me a friend, and they get better internet. Win-win.\n\nAnyone you think I should contact or swing by with?\n\nFeel free to share my contact with anyone, too — this is my cell phone',
+  R2: 'hope everything\'s been solid. Anyone come to mind who might be struggling with their current internet, or maybe overpaying?\n\nIt\'s a $100 thank-you if you can help them get hooked up through me',
+  R3: '{firstName}… $100 referral is still open if you ever think of someone. I\'m sure they\'d be grateful for you helping them\n\nHope everything\'s been good 👍\n\n' + repFirst
 };
 var REF_COL      = { R1: 'AC', R2: 'AD', R3: 'AE' };
 var _refQueue    = [];
@@ -951,8 +951,11 @@ function confirmRefSend(openMessages) {
 
   // Open Messages first if needed
   if (openMessages) {
-    var text = encodeURIComponent(REF_TEXTS[item.round]);
-    window.location.href = 'sms:+1' + item.phone + '&body=' + text;
+    var firstName = (item.name || '').split(' ')[0];
+    var msgText = REF_TEXTS[item.round].replace('{firstName}', firstName);
+    var isAndroid = /android/i.test(navigator.userAgent);
+    var sep = isAndroid ? '?' : '&';
+    window.location.href = 'sms:+1' + item.phone + sep + 'body=' + encodeURIComponent(msgText);
   }
 
   // Optimistically dismiss — survives renderReferrals() rebuilding the queue
