@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v40 -->
+  <!-- v41 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -345,7 +345,7 @@
     <div class="ref-modal-warning">Clicking "Send Text" will open Messages with a pre-written text and mark this customer as contacted.</div>
     <div class="ref-modal-btns">
       <button class="ref-modal-btn ref-btn-send"    onclick="confirmRefSend(true)">Send Text</button>
-      <button class="ref-modal-btn ref-btn-already" onclick="confirmRefSend(false)">Already Sent Manually</button>
+      <button class="ref-modal-btn ref-btn-already" onclick="confirmRefSend(false)">Already Sent</button>
       <button class="ref-modal-btn ref-btn-cancel"  onclick="closeRefModal()">Cancel</button>
     </div>
   </div>
@@ -850,9 +850,10 @@ var REF_TEXTS = {
   R2: 'Placeholder 2',
   R3: 'Placeholder 3'
 };
-var REF_COL = { R1: 'AC', R2: 'AD', R3: 'AE' };
-var _refQueue = [];
+var REF_COL      = { R1: 'AC', R2: 'AD', R3: 'AE' };
+var _refQueue    = [];
 var _refActiveIdx = null;
+var _refDismissed = {}; // rows dismissed optimistically, keyed by "row-round"
 
 function renderReferrals() {
   var body = document.getElementById('drawer-body');
@@ -884,6 +885,8 @@ function renderReferrals() {
     }
 
     if (round) {
+      var key = r['_row'] + '-' + round;
+      if (_refDismissed[key]) return; // optimistically hidden
       _refQueue.push({
         row:         r['_row'],
         name:        r['Customer Name'] || '—',
@@ -946,14 +949,14 @@ function confirmRefSend(openMessages) {
   var item = _refQueue[_refActiveIdx];
   closeRefModal();
 
-  // Open Messages first if needed (before async operations)
+  // Open Messages first if needed
   if (openMessages) {
     var text = encodeURIComponent(REF_TEXTS[item.round]);
     window.location.href = 'sms:+1' + item.phone + '&body=' + text;
   }
 
-  // Optimistically remove from queue and re-render immediately
-  _refQueue.splice(_refActiveIdx, 1);
+  // Optimistically dismiss — survives renderReferrals() rebuilding the queue
+  _refDismissed[item.row + '-' + item.round] = true;
   _refActiveIdx = null;
   renderReferrals();
   showToast('Marked as contacted ✓');
@@ -962,15 +965,16 @@ function confirmRefSend(openMessages) {
   var url = SCRIPT_URL + '?action=stamp&row=' + item.row + '&col=' + item.col;
   fetch(url).then(function(res){ return res.json(); }).then(function(result){
     if (!result.success) {
-      // Put item back at top of queue so they can retry
-      _refQueue.unshift(item);
+      // Undo dismissal so they can retry
+      delete _refDismissed[item.row + '-' + item.round];
       renderReferrals();
       showToast('Stamp failed — tap Send to retry');
     } else {
-      fetchData(); // refresh data silently in background
+      // Fresh fetch will clear _refDismissed naturally since data now has the date
+      fetchData().then(function(){ _refDismissed = {}; });
     }
   }).catch(function(){
-    _refQueue.unshift(item);
+    delete _refDismissed[item.row + '-' + item.round];
     renderReferrals();
     showToast('Network error — tap Send to retry');
   });
