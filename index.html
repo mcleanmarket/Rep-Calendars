@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v36 -->
+  <!-- v38 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -152,10 +152,10 @@
 
     /* Referrals */
     .ref-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .ref-table th, .ref-table td { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--g100); text-align: left; }
+    .ref-table th, .ref-table td { padding: 9px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--g100); text-align: left; }
     .ref-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g500); background: #fff; position: sticky; top: 0; }
     body.dark .ref-table th { background: #1a1a1a; }
-    .ref-send-btn { padding: 3px 8px; background: var(--orange); color: #fff; border: none; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .ref-send-btn { padding: 7px 0; width: 100%; background: var(--orange); color: #fff; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .round-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
     .round-r1 { background: #bfdbfe; color: #1e40af; }
     .round-r2 { background: #e9d5ff; color: #4c1d95; }
@@ -892,7 +892,11 @@ function renderReferrals() {
     }
   });
 
-  _refQueue.sort(function(a,b){ return a.due - b.due; });
+  var ROUND_ORDER = { R1: 0, R2: 1, R3: 2 };
+  _refQueue.sort(function(a,b){
+    var ro = ROUND_ORDER[a.round] - ROUND_ORDER[b.round];
+    return ro !== 0 ? ro : a.due - b.due;
+  });
 
   if (!_refQueue.length) {
     body.innerHTML = '<div class="drawer-empty">🎉 No referral texts due!</div>';
@@ -914,9 +918,9 @@ function renderReferrals() {
   }).join('');
 
   body.innerHTML =
-    '<div style="padding:7px 12px;font-size:11px;color:var(--g500);border-bottom:1px solid var(--g100);">💡 Best time to text: 10–11am or 4–7pm</div>'
+    '<div style="padding:8px 12px;font-size:13px;font-weight:700;color:var(--g700);border-bottom:1px solid var(--g100);">💡 Best time to text: 10–11am or 4–7pm</div>'
     +'<table class="ref-table">'
-    +'<colgroup><col style="width:16%"><col style="width:28%"><col style="width:30%"><col style="width:11%"><col style="width:15%"></colgroup>'
+    +'<colgroup><col style="width:13%"><col style="width:21%"><col style="width:25%"><col style="width:14%"><col style="width:27%"></colgroup>'
     +'<thead><tr><th>Install</th><th>Name</th><th>Phone</th><th>Round</th><th></th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table>';
 }
