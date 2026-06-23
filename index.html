@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v28 -->
+  <!-- v29 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -647,7 +647,36 @@ function renderDashboard() {
   }).join('');
   body.innerHTML =
     '<div class="dash-grid">'
-    +'<div class="dash-card"><div class="dash-card-title">Performance</div>'
+    // ── Top 3 Days card (full width) ──────────────────────
+    +(function(){
+      var dayCounts = {};
+      _repRows.forEach(function(r){
+        if ((r['Status']||'') === 'Pending') return;
+        var d = r['Date Sold'];
+        if (!d) return;
+        var key = fmtShort(parseDate(d));
+        if (!key || key==='—') return;
+        dayCounts[key] = (dayCounts[key]||0) + 1;
+      });
+      var days = Object.keys(dayCounts).sort(function(a,b){ return dayCounts[b]-dayCounts[a]; });
+      var medals = [
+        { label:'🥇', color:'#b8860b', bg:'#fffbeb' },
+        { label:'🥈', color:'#6b7280', bg:'#f3f4f6' },
+        { label:'🥉', color:'#92400e', bg:'#fef3c7' }
+      ];
+      var rows = days.slice(0,3).map(function(d,i){
+        var m = medals[i];
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:'+(i<2?'1px solid var(--g100)':'none')+'">'
+          +'<span style="font-size:18px;line-height:1;">'+m.label+'</span>'
+          +'<span style="flex:1;font-size:13px;font-weight:600;color:var(--black);">'+d+'</span>'
+          +'<span style="font-size:15px;font-weight:700;color:'+m.color+';">'+dayCounts[d]+' sold</span>'
+          +'</div>';
+      }).join('');
+      return '<div class="dash-card" style="grid-column:1/-1;"><div class="dash-card-title">Top Days</div>'
+        +(rows||'<div style="color:var(--g500);font-size:12px;">No data yet</div>')
+        +'</div>';
+    })()
+    +'<div class="dash-card"><div class="dash-card-title">Summary</div>'
       +'<div class="dash-stat-row"><span>Total Sold</span><strong>'+total+'</strong></div>'
       +'<div class="dash-stat-row installed"><span>Installed</span><strong>'+installed+'</strong></div>'
       +'<div class="dash-stat-row scheduled"><span>Scheduled</span><strong>'+scheduled+'</strong></div>'
