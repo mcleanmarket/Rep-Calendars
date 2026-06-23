@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v34 -->
+  <!-- v36 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -152,7 +152,7 @@
 
     /* Referrals */
     .ref-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .ref-table th, .ref-table td { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--g100); }
+    .ref-table th, .ref-table td { padding: 4px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--g100); text-align: left; }
     .ref-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g500); background: #fff; position: sticky; top: 0; }
     body.dark .ref-table th { background: #1a1a1a; }
     .ref-send-btn { padding: 3px 8px; background: var(--orange); color: #fff; border: none; border-radius: 5px; font-size: 10px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
@@ -938,22 +938,34 @@ function confirmRefSend(openMessages) {
   var item = _refQueue[_refActiveIdx];
   closeRefModal();
 
-  // Stamp the date in the sheet
-  var url = SCRIPT_URL + '?action=stamp&row=' + item.row + '&col=' + item.col;
-  fetch(url).then(function(res){ return res.json(); }).then(function(data){
-    if (data.success) {
-      showToast('Marked as contacted ✓');
-      fetchData(); // refresh so account disappears from list
-    } else {
-      showToast('Failed to stamp date');
-    }
-  }).catch(function(){ showToast('Network error'); });
-
-  // Open Messages if "Send Text" was chosen
+  // Open Messages first if needed (before async operations)
   if (openMessages) {
     var text = encodeURIComponent(REF_TEXTS[item.round]);
     window.location.href = 'sms:+1' + item.phone + '&body=' + text;
   }
+
+  // Optimistically remove from queue and re-render immediately
+  _refQueue.splice(_refActiveIdx, 1);
+  _refActiveIdx = null;
+  renderReferrals();
+  showToast('Marked as contacted ✓');
+
+  // Stamp the sheet in background
+  var url = SCRIPT_URL + '?action=stamp&row=' + item.row + '&col=' + item.col;
+  fetch(url).then(function(res){ return res.json(); }).then(function(result){
+    if (!result.success) {
+      // Put item back at top of queue so they can retry
+      _refQueue.unshift(item);
+      renderReferrals();
+      showToast('Stamp failed — tap Send to retry');
+    } else {
+      fetchData(); // refresh data silently in background
+    }
+  }).catch(function(){
+    _refQueue.unshift(item);
+    renderReferrals();
+    showToast('Network error — tap Send to retry');
+  });
 }
 
 function copyVal(text, el) {
