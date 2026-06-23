@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v39 -->
+  <!-- v40 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -411,16 +411,20 @@ function getSlots(key, period) { return ((_slots[key]||{})[period])||0; }
 var LS_DATA = 'rep_cal_data_v1';
 
 function fetchData() {
+  var syncBtn = document.getElementById('syncBtn');
+  if (syncBtn) { syncBtn.textContent = '↻'; syncBtn.style.opacity = '0.5'; }
   return fetch(SCRIPT_URL)
     .then(function(r){ return r.json(); })
     .then(function(json){
       _allRows = json.data || [];
       _repRows = _allRows.filter(function(r){ return (r['Rep Name']||'').trim()===repName; });
       try { localStorage.setItem(LS_DATA, JSON.stringify({ts: Date.now(), data: json.data})); } catch(e){}
+      if (syncBtn) { syncBtn.textContent = 'Sync'; syncBtn.style.opacity = '1'; }
       renderCalendar();
       setTimeout(scrollToToday, 100);
     })
     .catch(function(e){
+      if (syncBtn) { syncBtn.textContent = 'Sync'; syncBtn.style.opacity = '1'; }
       var el=document.getElementById('loading-msg');
       if(el) el.textContent='Failed to load. Check Apps Script.';
       console.error(e);
