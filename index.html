@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v29 -->
+  <!-- v31 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -647,34 +647,43 @@ function renderDashboard() {
   }).join('');
   body.innerHTML =
     '<div class="dash-grid">'
-    // ── Top 3 Days card (full width) ──────────────────────
+    // ── Row 1: Top Days | Top Weeks ───────────────────────
     +(function(){
-      var dayCounts = {};
+      // Group by Date Sold (non-pending)
+      var daySales = {}, weekSales = {};
       _repRows.forEach(function(r){
         if ((r['Status']||'') === 'Pending') return;
-        var d = r['Date Sold'];
+        var d = parseDate(r['Date Sold']);
         if (!d) return;
-        var key = fmtShort(parseDate(d));
-        if (!key || key==='—') return;
-        dayCounts[key] = (dayCounts[key]||0) + 1;
+        // Day key
+        var dk = fmtShort(d);
+        if (dk && dk !== '—') daySales[dk] = (daySales[dk]||0) + 1;
+        // Week key — find Monday of the week
+        var day = d.getDay(); // 0=Sun
+        var diff = (day === 0) ? -6 : 1 - day;
+        var mon = new Date(d); mon.setDate(d.getDate() + diff);
+        var wk = fmtShort(mon);
+        if (wk && wk !== '—') weekSales[wk] = (weekSales[wk]||0) + 1;
       });
-      var days = Object.keys(dayCounts).sort(function(a,b){ return dayCounts[b]-dayCounts[a]; });
-      var medals = [
-        { label:'🥇', color:'#b8860b', bg:'#fffbeb' },
-        { label:'🥈', color:'#6b7280', bg:'#f3f4f6' },
-        { label:'🥉', color:'#92400e', bg:'#fef3c7' }
-      ];
-      var rows = days.slice(0,3).map(function(d,i){
-        var m = medals[i];
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:'+(i<2?'1px solid var(--g100)':'none')+'">'
-          +'<span style="font-size:18px;line-height:1;">'+m.label+'</span>'
-          +'<span style="flex:1;font-size:13px;font-weight:600;color:var(--black);">'+d+'</span>'
-          +'<span style="font-size:15px;font-weight:700;color:'+m.color+';">'+dayCounts[d]+' sold</span>'
+
+      var medals = ['🥇','🥈','🥉'];
+      var mColors = ['#b8860b','#6b7280','#92400e'];
+
+      function topCard(title, counts) {
+        var sorted = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+        var rows = sorted.slice(0,3).map(function(k,i){
+          return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:'+(i<2?'1px solid var(--g100)':'none')+'">'
+            +'<span style="font-size:16px;line-height:1;flex-shrink:0;">'+medals[i]+'</span>'
+            +'<span style="flex:1;font-size:12px;font-weight:600;color:var(--black);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+k+'</span>'
+            +'<span style="font-size:13px;font-weight:700;color:'+mColors[i]+';white-space:nowrap;">'+counts[k]+'</span>'
+            +'</div>';
+        }).join('');
+        return '<div class="dash-card"><div class="dash-card-title">'+title+'</div>'
+          +(rows||'<div style="color:var(--g500);font-size:12px;">No data</div>')
           +'</div>';
-      }).join('');
-      return '<div class="dash-card" style="grid-column:1/-1;"><div class="dash-card-title">Top Days</div>'
-        +(rows||'<div style="color:var(--g500);font-size:12px;">No data yet</div>')
-        +'</div>';
+      }
+
+      return topCard('Top Days', daySales) + topCard('Top Weeks', weekSales);
     })()
     +'<div class="dash-card"><div class="dash-card-title">Summary</div>'
       +'<div class="dash-stat-row"><span>Total Sold</span><strong>'+total+'</strong></div>'
@@ -689,8 +698,48 @@ function renderDashboard() {
       +'<div class="dash-stat-row cancel-rate"><span>Cancel Rate</span><strong>'+cancelRate+'%</strong></div>'
       +'<div class="dash-stat-row fail-rate"><span>Fail Rate</span><strong>'+failRate+'%</strong></div>'
     +'</div>'
-    +'<div class="dash-card" style="grid-column:1/-1;"><div class="dash-card-title">Plan Mix</div>'
+    +'<div class="dash-card"><div class="dash-card-title">Plan Mix</div>'
       +'<table class="plan-table"><tbody>'+planRows+'</tbody></table>'
+    +'</div>'
+    +'<div class="dash-card"><div class="dash-card-title">Averages</div>'
+      +(function(){
+        var nonPending = _repRows.filter(function(r){ return (r['Status']||'')!=='Pending'; });
+        var sellDays={}, installDays={}, weekSet={};
+        nonPending.forEach(function(r){
+          var d = parseDate(r['Date Sold']);
+          if (d) { var k=fmtShort(d); if(k&&k!=='—') sellDays[k]=1; }
+        });
+        _repRows.forEach(function(r){
+          if ((r['Status']||'')==='Installed') {
+            var d = parseDate(r['Install Date']);
+            if (d) { var k=fmtShort(d); if(k&&k!=='—') installDays[k]=1; }
+          }
+        });
+        nonPending.forEach(function(r){
+          var d = parseDate(r['Date Sold']); if (!d) return;
+          var day = d.getDay();
+          var diff = (day===0)?-6:1-day;
+          var mon = new Date(d); mon.setDate(d.getDate()+diff);
+          var wk = fmtShort(mon); if(wk&&wk!=='—') weekSet[wk]=1;
+        });
+        var totalSold      = nonPending.length;
+        var totalInstalled = _repRows.filter(function(r){ return (r['Status']||'')==='Installed'; }).length;
+        var totalCancelled = _repRows.filter(function(r){ return (r['Status']||'')==='Cancelled'; }).length;
+        var dSell    = Object.keys(sellDays).length    || 1;
+        var dInstall = Object.keys(installDays).length || 1;
+        var wks      = Object.keys(weekSet).length     || 1;
+        var avgSoldDay   = (totalSold/dSell).toFixed(1);
+        var avgInstDay   = (totalInstalled/dInstall).toFixed(1);
+        var avgCancelDay = (totalCancelled/dSell).toFixed(1);
+        var avgSoldWk    = (totalSold/wks).toFixed(1);
+        function row(label, val) {
+          return '<div class="dash-stat-row"><span>'+label+'</span><strong style="color:var(--black);">'+val+'</strong></div>';
+        }
+        return row('Sold / day', avgSoldDay)
+          + row('Installed / day', avgInstDay)
+          + row('Cancelled / day', avgCancelDay)
+          + row('Sold / week', avgSoldWk);
+      })()
     +'</div>'
     +'</div>';
 }
