@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v46 -->
+  <!-- v47 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -785,29 +785,48 @@ function renderAccounts() {
   });
   var shown = (_acctFilter.indexOf('all')>-1) ? sorted : sorted.filter(function(r){ return _acctFilter.indexOf(r['Status']||'') > -1; });
   if (!shown.length) { body.innerHTML='<div class="drawer-empty">No accounts.</div>'; return; }
+  var isFollowUp = _acctFilter.length === 1 && _acctFilter[0] === 'Follow Up';
   var rows = shown.map(function(r){
     var installDate=parseDate(r['Install Date']), soldDate=parseDate(r['Date Sold']);
     var rawPhone = (r['Phone']||'').toString().replace(/\D/g,'');
     var fmtPhone = rawPhone.replace(/(\d{3})(\d{3})(\d{4})/,'($1) $2-$3') || '—';
     var email   = r['Email']   || '—';
     var address = r['Address'] || '—';
+    var phoneCell = '<span class="copy-cell" onclick="copyVal(\''+rawPhone+'\',this)" title="Copy">'+fmtPhone+'</span>';
+    var accIdCell = r['Acc ID'] ? '<span class="copy-cell" onclick="copyVal(\''+r['Acc ID']+'\',this)" title="Copy">'+r['Acc ID']+'</span>' : '—';
+    var emailCell = '<span class="copy-cell" onclick="copyVal(\''+email.replace(/'/g,"\\'")+'\',this)" title="Copy">'+email+'</span>';
+    var addrCell  = '<span class="copy-cell" onclick="copyVal(\''+address.replace(/'/g,"\\'")+'\',this)" title="Copy">'+address+'</span>';
+    var notesCell = '<td style="color:var(--g500);white-space:normal;min-width:180px;">'+(r['Notes']||'—')+'</td>';
+    if (isFollowUp) {
+      return '<tr>'
+        +'<td>'+(r['Customer Name']||'—')+'</td>'
+        +'<td>'+fmtShort(installDate)+'</td>'
+        +'<td>'+statusBtn(r['Status'],'track')+'</td>'
+        +'<td>'+phoneCell+'</td>'
+        +notesCell
+        +'<td>'+fmtShort(soldDate)+'</td>'
+        +'<td>'+(r['Plan']||'—')+'</td>'
+        +'<td style="color:var(--g500);">'+accIdCell+'</td>'
+        +'<td style="color:var(--g500);">'+emailCell+'</td>'
+        +'<td style="color:var(--g500);">'+addrCell+'</td>'
+        +'</tr>';
+    }
     return '<tr>'
       +'<td>'+fmtShort(soldDate)+'</td>'
       +'<td>'+(r['Customer Name']||'—')+'</td>'
       +'<td>'+fmtShort(installDate)+'</td>'
       +'<td>'+(r['Plan']||'—')+'</td>'
       +'<td>'+statusBtn(r['Status'],'track')+'</td>'
-      +'<td><span class="copy-cell" onclick="copyVal(\''+rawPhone+'\',this)" title="Copy">'+fmtPhone+'</span></td>'
-      +'<td style="color:var(--g500);">'+(r['Acc ID'] ? '<span class="copy-cell" onclick="copyVal(\''+r['Acc ID']+'\',this)" title="Copy">'+r['Acc ID']+'</span>' : '—')+'</td>'
-      +'<td style="color:var(--g500);"><span class="copy-cell" onclick="copyVal(\''+email.replace(/'/g,"\\'")+ '\',this)" title="Copy">'+email+'</span></td>'
-      +'<td style="color:var(--g500);"><span class="copy-cell" onclick="copyVal(\''+address.replace(/'/g,"\\'")+'\',this)" title="Copy">'+address+'</span></td>'
-      +'<td style="color:var(--g500);white-space:normal;min-width:180px;">'+(r['Notes']||'—')+'</td>'
+      +'<td>'+phoneCell+'</td>'
+      +'<td style="color:var(--g500);">'+accIdCell+'</td>'
+      +'<td style="color:var(--g500);">'+emailCell+'</td>'
+      +'<td style="color:var(--g500);">'+addrCell+'</td>'
+      +notesCell
       +'</tr>';
   }).join('');
-  body.innerHTML =
-    '<div class="sheet-wrap"><table class="sheet-table accounts-sheet">'
-    +'<thead><tr><th>Sold</th><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Phone</th><th>Acc ID</th><th>Email</th><th>Address</th><th>Notes</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table></div>';
+  body.innerHTML = isFollowUp
+    ? '<div class="sheet-wrap"><table class="sheet-table accounts-sheet"><thead><tr><th>Name</th><th>Install</th><th>Status</th><th>Phone</th><th>Notes</th><th>Sold</th><th>Plan</th><th>Acc ID</th><th>Email</th><th>Address</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    : '<div class="sheet-wrap"><table class="sheet-table accounts-sheet"><thead><tr><th>Sold</th><th>Name</th><th>Install</th><th>Plan</th><th>Status</th><th>Phone</th><th>Acc ID</th><th>Email</th><th>Address</th><th>Notes</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function renderPayroll() {
