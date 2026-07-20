@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v47 -->
+  <!-- v52 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -187,7 +187,20 @@
     .copy-cell:hover { color: var(--black); }
     .drawer-empty { text-align: center; padding: 30px; color: var(--g500); font-size: 13px; }
 
-    /* ── Toast ───────────────────────────────────────────── */
+    /* Coupon popup */
+    .coupon-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 800; display: none; align-items: center; justify-content: center; }
+    .coupon-overlay.open { display: flex; }
+    .coupon-box { background: #fff; border-radius: 12px; padding: 18px 20px; width: 240px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    body.dark .coupon-box { background: #1a1a1a; }
+    .coupon-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--g500); margin-bottom: 12px; }
+    .coupon-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 9px 12px; margin-bottom: 8px; border: 1px solid var(--g200); border-radius: 7px; background: var(--g50); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.12s; }
+    .coupon-btn:last-child { margin-bottom: 0; }
+    .coupon-btn:hover { background: var(--g100); }
+    body.dark .coupon-btn { background: #222; border-color: #333; }
+    body.dark .coupon-btn:hover { background: #2a2a2a; }
+    .coupon-label { font-size: 13px; font-weight: 600; color: var(--g700); }
+    .coupon-desc { font-size: 11px; color: var(--g500); }
+    .coupon-cancel { display: block; text-align: center; margin-top: 12px; font-size: 12px; color: var(--g500); cursor: pointer; }
     .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px); background: #111 !important; color: #fff !important; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 600; transition: transform 0.25s; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
     #today-anchor { scroll-margin-top: 70px; }
@@ -262,7 +275,7 @@
 <body>
 
 <div class="hdr">
-  <div class="hdr-left">
+  <div class="hdr-left" onclick="openCouponPopup()" style="cursor:pointer;">
     <div class="logo-circle">N</div>
     <div class="logo-text"><span>NEXT</span>LINK</div>
   </div>
@@ -348,6 +361,35 @@
       <button class="ref-modal-btn ref-btn-already" onclick="confirmRefSend(false)">Already Sent</button>
       <button class="ref-modal-btn ref-btn-cancel"  onclick="closeRefModal()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- 40 OFF Confirmation -->
+<div class="coupon-overlay" id="coupon40Overlay" onclick="if(event.target===this)closeCoupon40()">
+  <div class="coupon-box">
+    <div class="coupon-title" style="color:var(--g700);font-size:13px;text-align:center;">🚨 Heads up 🚨</div>
+    <p style="font-size:12px;color:var(--g500);line-height:1.6;margin-bottom:16px;">This code is ONLY for rare fixed-wireless price-match situations on 1000MBPS &amp; 500MBPS.</p>
+    <button id="coupon40ConfirmBtn" class="coupon-btn" onclick="closeCoupon40();copyCoupon('XLSCAQPQ');" style="background:var(--g50);display:none;">
+      <span class="coupon-label" style="width:100%;text-align:center;">Got it — Copy Code</span>
+    </button>
+    <span class="coupon-cancel" onclick="closeCoupon40()">Cancel</span>
+  </div>
+</div>
+
+<!-- Coupon Popup -->
+<div class="coupon-overlay" id="couponOverlay" onclick="if(event.target===this)closeCouponPopup()">
+  <div class="coupon-box">
+    <div class="coupon-title">Discount Codes</div>
+    <button class="coupon-btn" onclick="copyCoupon('BORRJWUI')">
+      <span class="coupon-label" style="width:100%;text-align:center;">20 OFF</span>
+    </button>
+    <button class="coupon-btn" onclick="copyCoupon('FBWXFIIO')">
+      <span class="coupon-label" style="width:100%;text-align:center;">30 OFF</span>
+    </button>
+    <button class="coupon-btn" onclick="openCoupon40Confirm()" style="margin-top:4px;border-color:var(--g100);background:transparent;">
+      <span style="width:100%;text-align:center;font-size:12px;color:var(--g500);font-weight:500;font-family:'DM Sans',sans-serif;">40 OFF</span>
+    </button>
+    <span class="coupon-cancel" onclick="closeCouponPopup()">Cancel</span>
   </div>
 </div>
 
@@ -1026,6 +1068,29 @@ function toggleCity() {
   var hidden = document.body.classList.toggle('city-hidden');
   localStorage.setItem('cityHidden', hidden ? '1' : '0');
   document.getElementById('cityBtn').style.opacity = hidden ? '0.4' : '1';
+}
+
+function openCoupon40Confirm() {
+  closeCouponPopup();
+  var btn = document.getElementById('coupon40ConfirmBtn');
+  btn.style.display = 'none';
+  document.getElementById('coupon40Overlay').classList.add('open');
+  setTimeout(function(){ btn.style.display = ''; }, 3000);
+}
+function closeCoupon40() { document.getElementById('coupon40Overlay').classList.remove('open'); }
+function openCouponPopup()  { document.getElementById('couponOverlay').classList.add('open'); }
+function closeCouponPopup() { document.getElementById('couponOverlay').classList.remove('open'); }
+function copyCoupon(code) {
+  closeCouponPopup();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function(){ showToast('Copied: ' + code); }).catch(function(){ fallbackCopyCode(code); });
+  } else { fallbackCopyCode(code); }
+}
+function fallbackCopyCode(code) {
+  var ta = document.createElement('textarea');
+  ta.value = code; ta.style.cssText = 'position:absolute;left:-9999px;top:0;';
+  document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+  document.body.removeChild(ta); showToast('Copied: ' + code);
 }
 
 // ── Helpers ───────────────────────────────────────────────
