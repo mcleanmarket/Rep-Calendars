@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v8 -->
+  <!-- counter-v9 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
-    body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+    body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; touch-action: manipulation; }
 
     /* Header */
     .hdr { background: #0a0a0a; border-bottom: 1px solid #1e1e1e; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
@@ -45,7 +45,7 @@
 
     /* Stacked counters */
     .cnt-section { flex-shrink: 0; padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 9px; }
-    .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.06s ease, background 0.06s ease, border-color 0.06s ease; }
+    .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.06s ease, background 0.06s ease, border-color 0.06s ease; touch-action: manipulation; }
     .cnt-row:active { transform: scale(0.98); }
     .cnt-doors:active   { background: #241c0c; border-color: #F5A31A; }
     .cnt-engaged:active { background: #0f1a2e; border-color: #3b82f6; }
@@ -61,7 +61,7 @@
     .cnt-sales   .cnt-num { color: #4ade80; }
     .cnt-num.pop { animation: popNum 0.18s ease; }
     @keyframes popNum { 0% { transform: scale(1); } 40% { transform: scale(1.24); } 100% { transform: scale(1); } }
-    .cnt-sub { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #2a2a2a; background: #141414; border-radius: 12px; color: #666; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; transition: transform 0.06s ease, background 0.06s ease; }
+    .cnt-sub { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #2a2a2a; background: #141414; border-radius: 12px; color: #666; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; transition: transform 0.06s ease, background 0.06s ease; touch-action: manipulation; }
     .cnt-sub:active { color: #ccc; background: #222; transform: scale(0.88); }
 
     .status { text-align: center; font-size: 10px; color: #333; font-family: 'DM Mono', monospace; margin-top: 4px; }
