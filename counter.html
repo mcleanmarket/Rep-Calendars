@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v17 -->
+  <!-- counter-v19 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -241,7 +241,7 @@ function increment(field) {
   db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) d = { doors:0, engaged:0, sales:0, firstDoor:null };
     d[field] = (d[field]||0) + 1;
-    if (field === 'doors' && !d.firstDoor) d.firstDoor = Date.now();
+    if (field === 'doors' && d.doors === 1) d.firstDoor = Date.now(); // fresh stamp each 0->1
     return d;
   });
 }
@@ -255,6 +255,7 @@ function decrement(field) {
   db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) return d;
     d[field] = Math.max(0, (d[field]||0) - 1);
+    if (field === 'doors' && d.doors === 0) d.firstDoor = null; // clear stamp at zero
     return d;
   });
 }
@@ -267,11 +268,14 @@ function updateMyDisplay() {
 
 function fmtTime(ms) {
   if (!ms) return '';
-  var d = new Date(ms);
-  var h = d.getHours(), m = d.getMinutes();
-  var ap = h < 12 ? 'a' : 'p';
-  var hh = h % 12; if (hh === 0) hh = 12;
-  return hh + ':' + (m < 10 ? '0' + m : m) + ap;
+  // Always render in Central Time, regardless of the rep's device timezone
+  var parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true
+  }).formatToParts(new Date(ms));
+  var o = {};
+  parts.forEach(function(p) { o[p.type] = p.value; });
+  var ap = (o.dayPeriod || '').toLowerCase().charAt(0); // 'a' or 'p'
+  return o.hour + ':' + o.minute + ap;
 }
 
 function renderChart() {
