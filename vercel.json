@@ -1,8 +1,7 @@
-{
+\{
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/counter",       "destination": "/counter.html" },
+    { "source": "/counter/:slug", "destination": "/counter.html" },
+    { "source": "/(.*)",          "destination": "/index.html" }
   ]
 }
