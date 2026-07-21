@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- counter-v1 -->
+  <title>Counter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #F5A31A;
+      --black:  #111111;
+      --g50:    #f5f7fa;
+      --g100:   #eaecf0;
+      --g200:   #d8dde6;
+      --g500:   #7c8fa6;
+      --g700:   #3d4f63;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .hdr { background: #0a0a0a; border-bottom: 1px solid #222; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+    .hdr-left { display: flex; align-items: center; gap: 8px; }
+    .logo-circle { width: 30px; height: 30px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #fff; }
+    .logo-text { font-size: 18px; font-weight: 700; color: #fff; }
+    .logo-text span { color: var(--orange); }
+    .hdr-date { font-size: 11px; color: #555; font-family: 'DM Mono', monospace; }
+    .back-btn { font-size: 12px; color: #555; background: none; border: 1px solid #333; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .back-btn:hover { color: #fff; border-color: #555; }
+
+    /* ── Leaderboard (top half) ── */
+    .leaderboard-wrap { flex: 1; overflow-y: auto; padding: 12px 14px 6px; min-height: 0; }
+    .lb-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; margin-bottom: 10px; }
+
+    .lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #1a1a1a; margin-bottom: 6px; transition: background 0.15s; }
+    .lb-row.lb-me { background: #1e1a10; border: 1px solid #3a2e0a; }
+    .lb-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .lb-info { flex: 1; min-width: 0; }
+    .lb-name { font-size: 13px; font-weight: 600; color: #f0f0f0; }
+    .lb-first { font-size: 10px; color: #555; margin: 1px 0 4px; font-family: 'DM Mono', monospace; }
+    .lb-first-none { color: #333; }
+    .lb-bar-wrap { height: 5px; background: #2a2a2a; border-radius: 3px; overflow: hidden; }
+    .lb-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; min-width: 4px; }
+    .lb-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+    .lb-stat { font-size: 11px; font-family: 'DM Mono', monospace; color: #666; }
+    .lb-stat.doors { font-size: 18px; font-weight: 700; color: #f0f0f0; line-height: 1; }
+    .lb-sub-stats { display: flex; gap: 6px; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: #222; flex-shrink: 0; margin: 0; position: relative; }
+    .divider-label { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #0f0f0f; padding: 0 10px; font-size: 10px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+
+    /* ── My Counters (bottom half) ── */
+    .my-wrap { flex-shrink: 0; padding: 14px 14px 20px; background: #0f0f0f; }
+    .my-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; margin-bottom: 10px; }
+    .counters { display: flex; gap: 8px; }
+    .cnt-card { flex: 1; background: #1a1a1a; border-radius: 12px; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; border: 1px solid #2a2a2a; }
+    .cnt-tap { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .cnt-tap:active { background: #222; }
+    .cnt-num { font-size: 44px; font-weight: 700; color: #f0f0f0; line-height: 1; font-family: 'DM Mono', monospace; }
+    .cnt-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #555; margin-top: 5px; }
+    .cnt-doors .cnt-num { color: var(--orange); }
+    .cnt-engaged .cnt-num { color: #60a5fa; }
+    .cnt-sales .cnt-num { color: #4ade80; }
+    .cnt-minus { width: 100%; padding: 6px; background: #141414; border: none; border-top: 1px solid #2a2a2a; color: #444; font-size: 16px; cursor: pointer; font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .cnt-minus:active { color: #888; }
+
+    .reset-btn { margin-top: 12px; width: 100%; padding: 8px; background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #444; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
+    .reset-btn:active { color: #888; border-color: #555; }
+
+    /* ── Confirm overlay ── */
+    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 800; display: none; align-items: center; justify-content: center; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box { background: #1a1a1a; border-radius: 14px; padding: 24px 20px; width: 260px; text-align: center; border: 1px solid #333; }
+    .confirm-box h3 { font-size: 15px; font-weight: 700; color: #f0f0f0; margin-bottom: 6px; }
+    .confirm-box p { font-size: 12px; color: #666; margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 8px; }
+    .confirm-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .confirm-cancel { background: #2a2a2a; color: #aaa; }
+    .confirm-go { background: #ef4444; color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo-circle">N</div>
+    <div class="logo-text"><span>NEXT</span>LINK</div>
+  </div>
+  <div class="hdr-date" id="hdr-date"></div>
+  <button class="back-btn" onclick="history.back()">← Calendar</button>
+</div>
+
+<div class="leaderboard-wrap">
+  <div class="lb-title">Today's Team</div>
+  <div id="leaderboard"></div>
+</div>
+
+<div class="divider"><span class="divider-label">My Counter</span></div>
+
+<div class="my-wrap">
+  <div class="counters">
+    <div class="cnt-card cnt-doors">
+      <div class="cnt-tap" onclick="increment('doors')">
+        <div class="cnt-num" id="cnt-doors">0</div>
+        <div class="cnt-label">Doors</div>
+      </div>
+      <button class="cnt-minus" onclick="decrement('doors')">−</button>
+    </div>
+    <div class="cnt-card cnt-engaged">
+      <div class="cnt-tap" onclick="increment('engaged')">
+        <div class="cnt-num" id="cnt-engaged">0</div>
+        <div class="cnt-label">Engaged</div>
+      </div>
+      <button class="cnt-minus" onclick="decrement('engaged')">−</button>
+    </div>
+    <div class="cnt-card cnt-sales">
+      <div class="cnt-tap" onclick="increment('sales')">
+        <div class="cnt-num" id="cnt-sales">0</div>
+        <div class="cnt-label">Sales</div>
+      </div>
+      <button class="cnt-minus" onclick="decrement('sales')">−</button>
+    </div>
+  </div>
+  <button class="reset-btn" onclick="openReset()">Reset My Counters</button>
+</div>
+
+<!-- Reset Confirm -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>Reset counters?</h3>
+    <p>This will zero out your Doors, Engaged, and Sales for today.</p>
+    <div class="confirm-btns">
+      <button class="confirm-btn confirm-cancel" onclick="closeReset()">Cancel</button>
+      <button class="confirm-btn confirm-go" onclick="confirmReset()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyA8swfoYsvJsU0ugfxFmJTs2almBk7DGVE",
+    authDomain:        "motion-marketing-e1e45.firebaseapp.com",
+    databaseURL:       "https://motion-marketing-e1e45-default-rtdb.firebaseio.com",
+    projectId:         "motion-marketing-e1e45",
+    storageBucket:     "motion-marketing-e1e45.firebasestorage.app",
+    messagingSenderId: "356161676852",
+    appId:             "1:356161676852:web:d5591aad4c99f06a088c61"
+  });
+  var db = firebase.database();
+
+  var REPS = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
+  var REP_COLORS = { logan:'#F5A31A', brycen:'#3b82f6', sami:'#4ade80', connor:'#a855f7', jacob:'#ef4444' };
+  var REP_ORDER  = ['logan','brycen','sami','connor','jacob'];
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  var slug    = (window.location.pathname.split('/').filter(Boolean)[1] || 'logan').toLowerCase();
+  if (!REPS[slug]) slug = 'logan';
+  var repName = REPS[slug];
+  var repFirst = repName.split(' ')[0];
+
+  // Date header
+  var now = new Date();
+  document.getElementById('hdr-date').textContent = DN[now.getDay()] + ', ' + MN[now.getMonth()] + ' ' + now.getDate();
+
+  // Today key
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  var _data = {};
+
+  // Real-time listener
+  db.ref('counters/' + todayKey()).on('value', function(snap) {
+    _data = snap.val() || {};
+    renderLeaderboard();
+    renderMyCounts();
+  });
+
+  function increment(field) {
+    db.ref('counters/' + todayKey() + '/' + slug).transaction(function(d) {
+      if (!d) d = { doors: 0, engaged: 0, sales: 0, firstDoor: null };
+      d[field] = (d[field] || 0) + 1;
+      if (field === 'doors' && !d.firstDoor) d.firstDoor = Date.now();
+      return d;
+    });
+  }
+
+  function decrement(field) {
+    db.ref('counters/' + todayKey() + '/' + slug).transaction(function(d) {
+      if (!d) return d;
+      d[field] = Math.max(0, (d[field] || 0) - 1);
+      return d;
+    });
+  }
+
+  function openReset()   { document.getElementById('confirmOverlay').classList.add('open'); }
+  function closeReset()  { document.getElementById('confirmOverlay').classList.remove('open'); }
+  function confirmReset() {
+    closeReset();
+    db.ref('counters/' + todayKey() + '/' + slug).set({ doors: 0, engaged: 0, sales: 0, firstDoor: null });
+  }
+
+  function fmtTime(ts) {
+    if (!ts) return null;
+    var d = new Date(ts);
+    var h = d.getHours(), m = d.getMinutes();
+    var ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return h + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+  }
+
+  function renderLeaderboard() {
+    var maxDoors = 1;
+    REP_ORDER.forEach(function(s) { maxDoors = Math.max(maxDoors, (_data[s] || {}).doors || 0); });
+
+    var sorted = REP_ORDER.slice().sort(function(a, b) {
+      return ((_data[b] || {}).doors || 0) - ((_data[a] || {}).doors || 0);
+    });
+
+    document.getElementById('leaderboard').innerHTML = sorted.map(function(s) {
+      var d = _data[s] || { doors: 0, engaged: 0, sales: 0 };
+      var color = REP_COLORS[s];
+      var first = REPS[s].split(' ')[0];
+      var parts = REPS[s].split(' ');
+      var initials = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+      var barPct = Math.round(((d.doors || 0) / maxDoors) * 100);
+      var firstStr = d.firstDoor ? fmtTime(d.firstDoor) : null;
+      var isMe = s === slug;
+
+      return '<div class="lb-row' + (isMe ? ' lb-me' : '') + '">'
+        + '<div class="lb-avatar" style="background:' + color + '">' + initials + '</div>'
+        + '<div class="lb-info">'
+          + '<div class="lb-name">' + first + (isMe ? ' <span style="color:var(--orange);font-size:10px;">(you)</span>' : '') + '</div>'
+          + '<div class="lb-first' + (firstStr ? '' : ' lb-first-none') + '">' + (firstStr ? 'First door: ' + firstStr : 'Not started') + '</div>'
+          + '<div class="lb-bar-wrap"><div class="lb-bar" style="width:' + barPct + '%;background:' + color + '"></div></div>'
+        + '</div>'
+        + '<div class="lb-stats">'
+          + '<span class="lb-stat doors">' + (d.doors || 0) + '</span>'
+          + '<div class="lb-sub-stats">'
+            + '<span class="lb-stat">E:' + (d.engaged || 0) + '</span>'
+            + '<span class="lb-stat">S:' + (d.sales || 0) + '</span>'
+          + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function renderMyCounts() {
+    var d = _data[slug] || { doors: 0, engaged: 0, sales: 0 };
+    document.getElementById('cnt-doors').textContent   = d.doors   || 0;
+    document.getElementById('cnt-engaged').textContent = d.engaged  || 0;
+    document.getElementById('cnt-sales').textContent   = d.sales   || 0;
+  }
+</script>
+</body>
+</html>
