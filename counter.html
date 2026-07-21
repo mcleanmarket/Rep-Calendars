@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v13 -->
+  <!-- counter-v17 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -13,8 +13,9 @@
     body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; touch-action: manipulation; }
 
     /* Header */
-    .hdr { background: #0a0a0a; border-bottom: 1px solid #1e1e1e; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+    .hdr { background: #0a0a0a; border-bottom: 1px solid #1e1e1e; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; flex-shrink: 0; }
     .logo-img { height: 26px; width: auto; display: block; }
+    .hdr-right { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; margin-left: 10px; }
     .hdr-date { font-size: 11px; color: #444; font-family: 'DM Mono', monospace; }
 
     /* Chart section */
@@ -28,8 +29,10 @@
     /* Stacked horizontal leaderboard */
     .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 4px 0; overflow: hidden; }
     .lb-row { display: flex; align-items: center; gap: 9px; }
-    .lb-name-lbl { width: 52px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: #999; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .lb-row.me .lb-name-lbl { color: #F5A31A; }
+    .lb-name-lbl { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.1; overflow: hidden; }
+    .lb-name-lbl .nm { font-size: 12px; font-weight: 700; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .lb-name-lbl .ts { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; white-space: nowrap; margin-top: 1px; }
+    .lb-row.me .lb-name-lbl .nm { color: #F5A31A; }
     .lb-track { flex: 1; min-width: 0; }
     .lb-bar { display: flex; max-width: 100%; height: 30px; border-radius: 7px; overflow: hidden; box-sizing: border-box; transition: width 0.3s ease; }
     .lb-seg { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 5px; font-family: 'DM Mono', monospace; font-weight: 700; overflow: hidden; white-space: nowrap; flex-grow: 0; flex-shrink: 1; flex-basis: 0; min-width: 32px; box-sizing: border-box; }
@@ -74,13 +77,39 @@
     .status { text-align: center; font-size: 10px; color: #333; font-family: 'DM Mono', monospace; margin-top: 4px; }
     .status.ok  { color: #4ade80; }
     .status.err { color: #ef4444; }
+
+    /* Promo codes (inline in header, muted gray like counter buttons) */
+    .promo-btn { background: #1a1a1a; border: 1px solid #2a2a2a; color: #999; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; padding: 5px 7px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    .promo-btn:active { background: #2a2a2a; color: #ccc; }
+    /* 20 & 30 = clear choices: wider + brighter */
+    #promo20, #promo30 { flex: 1; padding: 6px 16px; color: #cfcfcf; }
+    /* 40 = de-emphasized */
+    #promo40 { padding: 4px 7px; font-size: 9px; color: #5a5a5a; border-color: #232323; }
+
+    /* 40-off warning */
+    .overlay40 { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 800; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .overlay40.open { display: flex; }
+    .warn-box { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 22px 20px; width: 300px; max-width: 100%; text-align: center; }
+    .warn-title { font-size: 14px; font-weight: 700; color: #f0f0f0; margin-bottom: 8px; }
+    .warn-text { font-size: 12px; color: #999; line-height: 1.6; margin-bottom: 18px; }
+    .warn-confirm { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #F5A31A; color: #241900; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; touch-action: manipulation; }
+    .warn-cancel { display: block; margin-top: 12px; font-size: 12px; color: #666; cursor: pointer; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(20px); background: #fff; color: #111; padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; z-index: 900; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body ontouchstart="">
 
 <div class="hdr">
   <img class="logo-img" src="/motion-logo-nobackground.png" alt="Motion">
-  <span class="hdr-date" id="hdr-date"></span>
+  <div class="hdr-right">
+    <button class="promo-btn" id="promo20">20 OFF</button>
+    <button class="promo-btn" id="promo30">30 OFF</button>
+    <button class="promo-btn" id="promo40">40 OFF</button>
+    <span class="hdr-date" id="hdr-date"></span>
+  </div>
 </div>
 
 <div class="chart-section">
@@ -120,6 +149,17 @@
   </div>
   <div class="status" id="status">connecting&hellip;</div>
 </div>
+
+<div class="overlay40" id="overlay40">
+  <div class="warn-box">
+    <div class="warn-title">&#128680; Heads up &#128680;</div>
+    <p class="warn-text">This code is ONLY for rare fixed-wireless price-match situations on 1000MBPS &amp; 500MBPS.</p>
+    <button class="warn-confirm" id="confirm40" style="display:none;">Got it &mdash; Copy Code</button>
+    <span class="warn-cancel" id="cancel40">Cancel</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -225,6 +265,15 @@ function updateMyDisplay() {
   document.getElementById('cnt-sales').textContent   = _local.sales;
 }
 
+function fmtTime(ms) {
+  if (!ms) return '';
+  var d = new Date(ms);
+  var h = d.getHours(), m = d.getMinutes();
+  var ap = h < 12 ? 'a' : 'p';
+  var hh = h % 12; if (hh === 0) hh = 12;
+  return hh + ':' + (m < 10 ? '0' + m : m) + ap;
+}
+
 function renderChart() {
   var area = document.getElementById('chart-area');
   var active = ORDER.filter(function(s) {
@@ -262,7 +311,7 @@ function renderChart() {
     if (sales > 0) segs += '<div class="lb-seg seg-sale"  style="flex-grow:' + sales + '">' + sales + '</div>';
 
     return '<div class="lb-row' + (isMe ? ' me' : '') + '">'
-      + '<span class="lb-name-lbl">' + first + '</span>'
+      + '<span class="lb-name-lbl"><span class="nm">' + first + '</span>'        + (d.firstDoor ? '<span class="ts">' + fmtTime(d.firstDoor) + '</span>' : '')      + '</span>'
       + '<div class="lb-track"><div class="lb-bar" style="width:' + barW + '">' + segs + '</div></div>'
     + '</div>';
   }).join('');
@@ -279,6 +328,43 @@ function bindTap(el, fn, stop) {
   bindTap(document.getElementById('row-' + fld), function() { increment(fld); });
   bindTap(document.getElementById('sub-' + fld), function() { decrement(fld); }, true);
 });
+
+/* ── Promo codes ─────────────────────────────────────────── */
+var CODES = { '20': 'BORRJWUI', '30': 'FBWXFIIO', '40': 'XLSCAQPQ' };
+var _toastT;
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+function copyCode(code) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function() { toast('Copied: ' + code); }).catch(function() { fallbackCopy(code); });
+  } else { fallbackCopy(code); }
+}
+function fallbackCopy(code) {
+  var ta = document.createElement('textarea');
+  ta.value = code; ta.style.cssText = 'position:absolute;left:-9999px;top:0;';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta); toast('Copied: ' + code);
+}
+function open40() {
+  var btn = document.getElementById('confirm40');
+  btn.style.display = 'none';
+  document.getElementById('overlay40').classList.add('open');
+  setTimeout(function() { btn.style.display = ''; }, 3000);
+}
+function close40() { document.getElementById('overlay40').classList.remove('open'); }
+
+bindTap(document.getElementById('promo20'), function() { copyCode(CODES['20']); });
+bindTap(document.getElementById('promo30'), function() { copyCode(CODES['30']); });
+bindTap(document.getElementById('promo40'), open40);
+bindTap(document.getElementById('confirm40'), function() { close40(); copyCode(CODES['40']); });
+bindTap(document.getElementById('cancel40'), close40);
+document.getElementById('overlay40').addEventListener('click', function(e) { if (e.target === this) close40(); });
 </script>
 </body>
 </html>
