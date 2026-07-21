@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v3 -->
+  <!-- counter-v4 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -23,64 +23,49 @@
     .back-btn { font-size: 11px; color: #555; background: none; border: 1px solid #2a2a2a; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: none; }
 
     /* Chart section */
-    .chart-section { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px 8px; }
-    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
+    .chart-section { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 16px 8px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
     .chart-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; }
     .legend { display: flex; gap: 12px; }
     .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #666; }
     .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
 
-    /* The actual chart */
-    .chart-area { flex: 1; min-height: 0; display: flex; align-items: flex-end; gap: 16px; justify-content: center; padding-bottom: 4px; }
-    .rep-group { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; max-width: 80px; }
-    .bars { display: flex; align-items: flex-end; gap: 3px; height: 100%; width: 100%; justify-content: center; }
-    .bar-wrap { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; }
-    .bar { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.4s ease; position: relative; min-height: 0; }
-    .bar.doors   { background: #F5A31A; }
-    .bar.engaged { background: #3b82f6; }
-    .bar.sales   { background: #4ade80; }
-    .bar-num { font-size: 9px; font-family: 'DM Mono', monospace; color: #888; text-align: center; margin-bottom: 2px; height: 12px; line-height: 12px; }
-    .rep-name { font-size: 11px; font-weight: 700; color: #888; text-align: center; white-space: nowrap; }
-    .rep-name.me { color: #F5A31A; }
-    .rep-first { font-size: 9px; color: #444; font-family: 'DM Mono', monospace; text-align: center; margin-top: 1px; }
-
+    /* Horizontal leaderboard */
+    .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 4px 0; overflow: hidden; }
+    .lb-row { display: flex; align-items: center; gap: 10px; }
+    .lb-track { flex: 1; display: flex; align-items: center; min-width: 0; }
+    .lb-bar { height: 28px; background: #F5A31A; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; min-width: 60px; box-sizing: border-box; transition: width 0.4s ease; overflow: hidden; }
+    .lb-name { font-size: 12px; font-weight: 700; color: #3a2600; white-space: nowrap; }
+    .lb-doors { font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 500; color: #d8d8d8; margin-left: 8px; white-space: nowrap; }
+    .lb-sales { width: 42px; text-align: right; font-size: 14px; font-family: 'DM Mono', monospace; font-weight: 600; color: #4ade80; flex-shrink: 0; }
+    .lb-sales.zero { color: #333; }
+    .lb-row.me .lb-bar { background: #ffb84d; box-shadow: 0 0 0 2px rgba(245,163,26,0.28); }
+    .lb-row.me .lb-name { color: #241900; }
     .no-data { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #333; }
 
     /* Divider */
-    .divider { height: 1px; background: #1e1e1e; flex-shrink: 0; position: relative; }
+    .divider { height: 1px; background: #1e1e1e; flex-shrink: 0; position: relative; margin: 0 0 4px; }
     .divider span { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #0f0f0f; padding: 0 10px; font-size: 10px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
 
-    /* Counters */
-    .cnt-section { flex-shrink: 0; padding: 14px 14px 22px; }
-    .counters { display: flex; gap: 8px; margin-bottom: 10px; }
-    .cnt-card { flex: 1; border-radius: 14px; background: #1a1a1a; border: 1px solid #2a2a2a; overflow: hidden; display: flex; flex-direction: column; }
-    .cnt-tap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
-    .cnt-tap:active { background: #222; }
-    .cnt-num { font-size: 48px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; }
+    /* Stacked counters */
+    .cnt-section { flex-shrink: 0; padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+    .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .cnt-row:active { background: #232323; }
+    .cnt-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    .cnt-doors   .cnt-dot { background: #F5A31A; }
+    .cnt-engaged .cnt-dot { background: #3b82f6; }
+    .cnt-sales   .cnt-dot { background: #4ade80; }
+    .cnt-lbl { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; }
+    .cnt-num { margin-left: auto; font-size: 42px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; }
     .cnt-doors   .cnt-num { color: #F5A31A; }
     .cnt-engaged .cnt-num { color: #3b82f6; }
     .cnt-sales   .cnt-num { color: #4ade80; }
-    .cnt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #555; margin-top: 5px; }
-    .cnt-sub { width: 100%; border: none; border-top: 1px solid #222; background: #141414; color: #444; font-size: 18px; padding: 6px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .cnt-sub:active { color: #aaa; }
+    .cnt-sub { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #2a2a2a; background: #141414; border-radius: 12px; color: #666; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; }
+    .cnt-sub:active { color: #ccc; background: #222; }
 
-    .reset-row { display: flex; gap: 8px; align-items: center; }
-    .reset-btn { flex: 1; padding: 8px; background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #444; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; }
-    .reset-btn:active { color: #888; border-color: #555; }
-    .status { font-size: 10px; color: #333; font-family: 'DM Mono', monospace; flex-shrink: 0; }
+    .status { text-align: center; font-size: 10px; color: #333; font-family: 'DM Mono', monospace; margin-top: 4px; }
     .status.ok  { color: #4ade80; }
     .status.err { color: #ef4444; }
-
-    /* Confirm */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 900; display: none; align-items: center; justify-content: center; }
-    .overlay.open { display: flex; }
-    .confirm-box { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 24px 20px; width: 260px; text-align: center; }
-    .confirm-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .confirm-box p { font-size: 12px; color: #666; margin-bottom: 20px; }
-    .confirm-btns { display: flex; gap: 8px; }
-    .cbtn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-    .cbtn-cancel { background: #2a2a2a; color: #aaa; }
-    .cbtn-go     { background: #ef4444; color: #fff; }
   </style>
 </head>
 <body>
@@ -101,7 +86,6 @@
     <div class="chart-title">Today's Team</div>
     <div class="legend">
       <div class="leg-item"><div class="leg-dot" style="background:#F5A31A"></div>Doors</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>Engaged</div>
       <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Sales</div>
     </div>
   </div>
@@ -113,51 +97,31 @@
 <div class="divider"><span id="my-label">My Counter</span></div>
 
 <div class="cnt-section">
-  <div class="counters">
-    <div class="cnt-card cnt-doors">
-      <div class="cnt-tap" onclick="increment('doors')">
-        <div class="cnt-num" id="cnt-doors">0</div>
-        <div class="cnt-lbl">Doors</div>
-      </div>
-      <button class="cnt-sub" onclick="decrement('doors')">−</button>
-    </div>
-    <div class="cnt-card cnt-engaged">
-      <div class="cnt-tap" onclick="increment('engaged')">
-        <div class="cnt-num" id="cnt-engaged">0</div>
-        <div class="cnt-lbl">Engaged</div>
-      </div>
-      <button class="cnt-sub" onclick="decrement('engaged')">−</button>
-    </div>
-    <div class="cnt-card cnt-sales">
-      <div class="cnt-tap" onclick="increment('sales')">
-        <div class="cnt-num" id="cnt-sales">0</div>
-        <div class="cnt-lbl">Sales</div>
-      </div>
-      <button class="cnt-sub" onclick="decrement('sales')">−</button>
-    </div>
+  <div class="cnt-row cnt-sales" onclick="increment('sales')">
+    <div class="cnt-dot"></div>
+    <div class="cnt-lbl">Sales</div>
+    <div class="cnt-num" id="cnt-sales">0</div>
+    <button class="cnt-sub" onclick="event.stopPropagation();decrement('sales')">−</button>
   </div>
-  <div class="reset-row">
-    <button class="reset-btn" onclick="openReset()">Reset Mine</button>
-    <span class="status" id="status">connecting…</span>
+  <div class="cnt-row cnt-engaged" onclick="increment('engaged')">
+    <div class="cnt-dot"></div>
+    <div class="cnt-lbl">Engaged</div>
+    <div class="cnt-num" id="cnt-engaged">0</div>
+    <button class="cnt-sub" onclick="event.stopPropagation();decrement('engaged')">−</button>
   </div>
-</div>
-
-<div class="overlay" id="confirmOverlay">
-  <div class="confirm-box">
-    <h3>Reset counters?</h3>
-    <p>Zeros out your Doors, Engaged, and Sales for today.</p>
-    <div class="confirm-btns">
-      <button class="cbtn cbtn-cancel" onclick="closeReset()">Cancel</button>
-      <button class="cbtn cbtn-go"     onclick="confirmReset()">Reset</button>
-    </div>
+  <div class="cnt-row cnt-doors" onclick="increment('doors')">
+    <div class="cnt-dot"></div>
+    <div class="cnt-lbl">Doors</div>
+    <div class="cnt-num" id="cnt-doors">0</div>
+    <button class="cnt-sub" onclick="event.stopPropagation();decrement('doors')">−</button>
   </div>
+  <div class="status" id="status">connecting…</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
 var REPS   = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
-var COLORS = { logan:'#F5A31A', brycen:'#60a5fa', sami:'#34d399', connor:'#c084fc', jacob:'#f87171' };
 var ORDER  = ['logan','brycen','sami','connor','jacob'];
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -200,10 +164,10 @@ db.ref('counters/'+todayKey()).on('value', function(snap) {
   _local.sales   = mine.sales   || 0;
   updateMyDisplay();
   renderChart();
-  document.getElementById('status').textContent   = '● live';
+  document.getElementById('status').textContent = '● live';
   document.getElementById('status').className = 'status ok';
 }, function() {
-  document.getElementById('status').textContent   = '● offline';
+  document.getElementById('status').textContent = '● offline';
   document.getElementById('status').className = 'status err';
 });
 
@@ -236,7 +200,6 @@ function updateMyDisplay() {
 
 function renderChart() {
   var area = document.getElementById('chart-area');
-  // Only show reps with at least 1 tap
   var active = ORDER.filter(function(s) {
     var d = _data[s] || {};
     return (d.doors||0) + (d.engaged||0) + (d.sales||0) > 0;
@@ -247,48 +210,29 @@ function renderChart() {
     return;
   }
 
-  // Max value for scaling
-  var maxVal = 1;
-  active.forEach(function(s) {
-    var d = _data[s] || {};
-    maxVal = Math.max(maxVal, d.doors||0, d.engaged||0, d.sales||0);
-  });
+  // Sort by doors, descending
+  active.sort(function(a,b){ return ((_data[b]||{}).doors||0) - ((_data[a]||{}).doors||0); });
 
-  // Chart height available (get from DOM)
-  var chartH = area.clientHeight || 160;
-  var maxBarH = Math.max(chartH - 32, 60); // leave room for name + number labels
+  // Max doors for bar scaling
+  var maxDoors = 1;
+  active.forEach(function(s){ maxDoors = Math.max(maxDoors, (_data[s]||{}).doors||0); });
 
   area.innerHTML = active.map(function(s) {
-    var d = _data[s] || { doors:0, engaged:0, sales:0 };
+    var d     = _data[s] || { doors:0, sales:0 };
     var first = REPS[s].split(' ')[0];
     var isMe  = s === slug;
+    var doors = d.doors || 0;
+    var sales = d.sales || 0;
+    var pct   = Math.max(14, Math.round(doors / maxDoors * 82)); // cap ~82% so door # fits at the tip
 
-    function barHTML(val, cls) {
-      var h = Math.round((val / maxVal) * maxBarH);
-      return '<div class="bar-wrap">'
-        + '<div class="bar-num">' + (val > 0 ? val : '') + '</div>'
-        + '<div class="bar ' + cls + '" style="height:' + h + 'px"></div>'
-        + '</div>';
-    }
-
-    return '<div class="rep-group">'
-      + '<div class="bars" style="height:' + maxBarH + 'px">'
-        + barHTML(d.doors||0,   'doors')
-        + barHTML(d.engaged||0, 'engaged')
-        + barHTML(d.sales||0,   'sales')
+    return '<div class="lb-row' + (isMe ? ' me' : '') + '">'
+      + '<div class="lb-track">'
+        + '<div class="lb-bar" style="width:' + pct + '%"><span class="lb-name">' + first + '</span></div>'
+        + '<span class="lb-doors">' + doors + '</span>'
       + '</div>'
-      + '<div class="rep-name' + (isMe ? ' me' : '') + '">' + first + '</div>'
+      + '<div class="lb-sales' + (sales>0?'':' zero') + '">' + (sales>0 ? sales : '·') + '</div>'
     + '</div>';
   }).join('');
-}
-
-function openReset()  { document.getElementById('confirmOverlay').classList.add('open'); }
-function closeReset() { document.getElementById('confirmOverlay').classList.remove('open'); }
-function confirmReset() {
-  closeReset();
-  _local = { doors:0, engaged:0, sales:0 };
-  updateMyDisplay();
-  db.ref('counters/'+todayKey()+'/'+slug).set({ doors:0, engaged:0, sales:0, firstDoor:null });
 }
 </script>
 </body>
