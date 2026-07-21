@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v4 -->
+  <!-- counter-v6 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -14,13 +14,11 @@
 
     /* Header */
     .hdr { background: #0a0a0a; border-bottom: 1px solid #1e1e1e; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
-    .hdr-left { display: flex; align-items: center; gap: 8px; }
-    .logo-circle { width: 28px; height: 28px; background: #F5A31A; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; }
-    .logo-text { font-size: 17px; font-weight: 700; color: #fff; }
-    .logo-text span { color: #F5A31A; }
+    .logo-img { height: 26px; width: auto; display: block; }
     .hdr-right { display: flex; align-items: center; gap: 10px; }
     .hdr-date { font-size: 11px; color: #444; font-family: 'DM Mono', monospace; }
-    .back-btn { font-size: 11px; color: #555; background: none; border: 1px solid #2a2a2a; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: none; }
+    .mute-btn { font-size: 15px; line-height: 1; background: none; border: 1px solid #2a2a2a; padding: 4px 8px; border-radius: 6px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .mute-btn:active { background: #222; }
 
     /* Chart section */
     .chart-section { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 16px 8px; }
@@ -32,14 +30,15 @@
 
     /* Horizontal leaderboard */
     .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 4px 0; overflow: hidden; }
-    .lb-row { display: flex; align-items: center; gap: 10px; }
-    .lb-track { flex: 1; display: flex; align-items: center; min-width: 0; }
-    .lb-bar { height: 28px; background: #F5A31A; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; min-width: 60px; box-sizing: border-box; transition: width 0.4s ease; overflow: hidden; }
-    .lb-name { font-size: 12px; font-weight: 700; color: #3a2600; white-space: nowrap; }
-    .lb-doors { font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 500; color: #d8d8d8; margin-left: 8px; white-space: nowrap; }
-    .lb-sales { width: 42px; text-align: right; font-size: 14px; font-family: 'DM Mono', monospace; font-weight: 600; color: #4ade80; flex-shrink: 0; }
-    .lb-sales.zero { color: #333; }
-    .lb-row.me .lb-bar { background: #ffb84d; box-shadow: 0 0 0 2px rgba(245,163,26,0.28); }
+    .lb-row { display: flex; align-items: center; }
+    .lb-bar { height: 30px; background: #F5A31A; border-radius: 7px; display: flex; align-items: center; gap: 8px; padding: 0 11px; min-width: 138px; box-sizing: border-box; transition: width 0.45s ease; overflow: hidden; white-space: nowrap; }
+    .lb-name { font-size: 12px; font-weight: 700; color: #3a2600; flex-shrink: 0; }
+    .lb-metrics { margin-left: auto; display: flex; align-items: center; gap: 7px; font-family: 'DM Mono', monospace; }
+    .m-doors { font-size: 15px; font-weight: 700; color: #241900; }
+    .m-eng, .m-sale { font-size: 13px; font-weight: 500; color: #241900; display: flex; align-items: center; gap: 3px; }
+    .m-eng::before  { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #1e40af; display: inline-block; }
+    .m-sale::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #15803d; display: inline-block; }
+    .lb-row.me .lb-bar { background: #ffb84d; box-shadow: 0 0 0 2px rgba(245,163,26,0.3); }
     .lb-row.me .lb-name { color: #241900; }
     .no-data { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #333; }
 
@@ -49,8 +48,11 @@
 
     /* Stacked counters */
     .cnt-section { flex-shrink: 0; padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 9px; }
-    .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
-    .cnt-row:active { background: #232323; }
+    .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.06s ease, background 0.06s ease, border-color 0.06s ease; }
+    .cnt-row:active { transform: scale(0.98); }
+    .cnt-doors:active   { background: #241c0c; border-color: #F5A31A; }
+    .cnt-engaged:active { background: #0f1a2e; border-color: #3b82f6; }
+    .cnt-sales:active   { background: #0f2418; border-color: #4ade80; }
     .cnt-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
     .cnt-doors   .cnt-dot { background: #F5A31A; }
     .cnt-engaged .cnt-dot { background: #3b82f6; }
@@ -60,8 +62,10 @@
     .cnt-doors   .cnt-num { color: #F5A31A; }
     .cnt-engaged .cnt-num { color: #3b82f6; }
     .cnt-sales   .cnt-num { color: #4ade80; }
-    .cnt-sub { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #2a2a2a; background: #141414; border-radius: 12px; color: #666; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; }
-    .cnt-sub:active { color: #ccc; background: #222; }
+    .cnt-num.pop { animation: popNum 0.18s ease; }
+    @keyframes popNum { 0% { transform: scale(1); } 40% { transform: scale(1.24); } 100% { transform: scale(1); } }
+    .cnt-sub { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #2a2a2a; background: #141414; border-radius: 12px; color: #666; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; transition: transform 0.06s ease, background 0.06s ease; }
+    .cnt-sub:active { color: #ccc; background: #222; transform: scale(0.88); }
 
     .status { text-align: center; font-size: 10px; color: #333; font-family: 'DM Mono', monospace; margin-top: 4px; }
     .status.ok  { color: #4ade80; }
@@ -71,13 +75,10 @@
 <body>
 
 <div class="hdr">
-  <div class="hdr-left">
-    <div class="logo-circle">N</div>
-    <div class="logo-text"><span>NEXT</span>LINK</div>
-  </div>
+  <img class="logo-img" src="/motion-logo-nobackground.png" alt="Motion">
   <div class="hdr-right">
     <span class="hdr-date" id="hdr-date"></span>
-    <a class="back-btn" id="back-link">← Back</a>
+    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">&#128266;</button>
   </div>
 </div>
 
@@ -86,6 +87,7 @@
     <div class="chart-title">Today's Team</div>
     <div class="legend">
       <div class="leg-item"><div class="leg-dot" style="background:#F5A31A"></div>Doors</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>Engaged</div>
       <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Sales</div>
     </div>
   </div>
@@ -98,24 +100,24 @@
 
 <div class="cnt-section">
   <div class="cnt-row cnt-sales" onclick="increment('sales')">
+    <button class="cnt-sub" onclick="event.stopPropagation();decrement('sales')">&minus;</button>
     <div class="cnt-dot"></div>
     <div class="cnt-lbl">Sales</div>
     <div class="cnt-num" id="cnt-sales">0</div>
-    <button class="cnt-sub" onclick="event.stopPropagation();decrement('sales')">−</button>
   </div>
   <div class="cnt-row cnt-engaged" onclick="increment('engaged')">
+    <button class="cnt-sub" onclick="event.stopPropagation();decrement('engaged')">&minus;</button>
     <div class="cnt-dot"></div>
     <div class="cnt-lbl">Engaged</div>
     <div class="cnt-num" id="cnt-engaged">0</div>
-    <button class="cnt-sub" onclick="event.stopPropagation();decrement('engaged')">−</button>
   </div>
   <div class="cnt-row cnt-doors" onclick="increment('doors')">
+    <button class="cnt-sub" onclick="event.stopPropagation();decrement('doors')">&minus;</button>
     <div class="cnt-dot"></div>
     <div class="cnt-lbl">Doors</div>
     <div class="cnt-num" id="cnt-doors">0</div>
-    <button class="cnt-sub" onclick="event.stopPropagation();decrement('doors')">−</button>
   </div>
-  <div class="status" id="status">connecting…</div>
+  <div class="status" id="status">connecting&hellip;</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -125,6 +127,7 @@ var REPS   = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi'
 var ORDER  = ['logan','brycen','sami','connor','jacob'];
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var FULL_DOORS = 50; // doors that fill the bar to 100%
 
 var parts = window.location.pathname.split('/').filter(Boolean);
 var slug  = (parts[1] || 'logan').toLowerCase();
@@ -132,9 +135,50 @@ if (!REPS[slug]) slug = 'logan';
 var repFirst = REPS[slug].split(' ')[0];
 
 document.getElementById('my-label').textContent  = repFirst + "'s Counter";
-document.getElementById('back-link').href         = '/' + slug;
 var now = new Date();
 document.getElementById('hdr-date').textContent   = DN[now.getDay()] + ' ' + MN[now.getMonth()] + ' ' + now.getDate();
+
+/* ── Feedback: sound + haptics + pop ─────────────────────── */
+var _muted = localStorage.getItem('cntMuted') === '1';
+document.getElementById('muteBtn').innerHTML = _muted ? '&#128263;' : '&#128266;';
+
+var _actx = null;
+function clickSound(dir) {
+  try {
+    if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === 'suspended') _actx.resume();
+    var t = _actx.currentTime;
+    var osc = _actx.createOscillator();
+    var gain = _actx.createGain();
+    osc.type = 'triangle';
+    var f = (dir === 'down') ? 320 : 760;
+    osc.frequency.setValueAtTime(f, t);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.55, t + 0.05);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    osc.connect(gain); gain.connect(_actx.destination);
+    osc.start(t); osc.stop(t + 0.1);
+  } catch (e) {}
+}
+function haptic(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+function feedback(dir) {
+  if (!_muted) clickSound(dir);
+  haptic(dir === 'down' ? 8 : 15);
+}
+function popNum(field) {
+  var el = document.getElementById('cnt-' + field);
+  if (!el) return;
+  el.classList.remove('pop');
+  void el.offsetWidth; // reflow so the animation can restart on rapid taps
+  el.classList.add('pop');
+}
+function toggleMute() {
+  _muted = !_muted;
+  localStorage.setItem('cntMuted', _muted ? '1' : '0');
+  document.getElementById('muteBtn').innerHTML = _muted ? '&#128263;' : '&#128266;';
+  if (!_muted) clickSound('up');
+}
 
 firebase.initializeApp({
   apiKey:            "AIzaSyA8swfoYsvJsU0ugfxFmJTs2almBk7DGVE",
@@ -164,16 +208,18 @@ db.ref('counters/'+todayKey()).on('value', function(snap) {
   _local.sales   = mine.sales   || 0;
   updateMyDisplay();
   renderChart();
-  document.getElementById('status').textContent = '● live';
+  document.getElementById('status').textContent = '\u25CF live';
   document.getElementById('status').className = 'status ok';
 }, function() {
-  document.getElementById('status').textContent = '● offline';
+  document.getElementById('status').textContent = '\u25CF offline';
   document.getElementById('status').className = 'status err';
 });
 
 function increment(field) {
   _local[field] = (_local[field]||0) + 1;
   updateMyDisplay();
+  popNum(field);
+  feedback('up');
   db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) d = { doors:0, engaged:0, sales:0, firstDoor:null };
     d[field] = (d[field]||0) + 1;
@@ -185,6 +231,8 @@ function increment(field) {
 function decrement(field) {
   _local[field] = Math.max(0, (_local[field]||0) - 1);
   updateMyDisplay();
+  popNum(field);
+  feedback('down');
   db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) return d;
     d[field] = Math.max(0, (d[field]||0) - 1);
@@ -210,27 +258,26 @@ function renderChart() {
     return;
   }
 
-  // Sort by doors, descending
   active.sort(function(a,b){ return ((_data[b]||{}).doors||0) - ((_data[a]||{}).doors||0); });
 
-  // Max doors for bar scaling
-  var maxDoors = 1;
-  active.forEach(function(s){ maxDoors = Math.max(maxDoors, (_data[s]||{}).doors||0); });
-
   area.innerHTML = active.map(function(s) {
-    var d     = _data[s] || { doors:0, sales:0 };
+    var d     = _data[s] || { doors:0, engaged:0, sales:0 };
     var first = REPS[s].split(' ')[0];
     var isMe  = s === slug;
-    var doors = d.doors || 0;
-    var sales = d.sales || 0;
-    var pct   = Math.max(14, Math.round(doors / maxDoors * 82)); // cap ~82% so door # fits at the tip
+    var doors = d.doors   || 0;
+    var eng   = d.engaged || 0;
+    var sales = d.sales   || 0;
+    var pct = Math.min(100, Math.round(doors / FULL_DOORS * 100));
 
     return '<div class="lb-row' + (isMe ? ' me' : '') + '">'
-      + '<div class="lb-track">'
-        + '<div class="lb-bar" style="width:' + pct + '%"><span class="lb-name">' + first + '</span></div>'
-        + '<span class="lb-doors">' + doors + '</span>'
+      + '<div class="lb-bar" style="width:' + pct + '%">'
+        + '<span class="lb-name">' + first + '</span>'
+        + '<span class="lb-metrics">'
+          + '<span class="m-doors">' + doors + '</span>'
+          + '<span class="m-eng">' + eng + '</span>'
+          + '<span class="m-sale">' + sales + '</span>'
+        + '</span>'
       + '</div>'
-      + '<div class="lb-sales' + (sales>0?'':' zero') + '">' + (sales>0 ? sales : '·') + '</div>'
     + '</div>';
   }).join('');
 }
