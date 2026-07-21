@@ -3,61 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v2 -->
+  <!-- counter-v3 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
-    body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; height: 100dvh; }
+    body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
 
-    .hdr { background: #0a0a0a; border-bottom: 1px solid #222; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+    /* Header */
+    .hdr { background: #0a0a0a; border-bottom: 1px solid #1e1e1e; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
     .hdr-left { display: flex; align-items: center; gap: 8px; }
-    .logo-circle { width: 30px; height: 30px; background: #F5A31A; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #fff; }
-    .logo-text { font-size: 18px; font-weight: 700; color: #fff; }
+    .logo-circle { width: 28px; height: 28px; background: #F5A31A; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; }
+    .logo-text { font-size: 17px; font-weight: 700; color: #fff; }
     .logo-text span { color: #F5A31A; }
-    .hdr-date { font-size: 11px; color: #555; font-family: 'DM Mono', monospace; }
-    .back-btn { font-size: 12px; color: #555; background: none; border: 1px solid #333; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: none; display: inline-block; }
+    .hdr-right { display: flex; align-items: center; gap: 10px; }
+    .hdr-date { font-size: 11px; color: #444; font-family: 'DM Mono', monospace; }
+    .back-btn { font-size: 11px; color: #555; background: none; border: 1px solid #2a2a2a; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: none; }
 
-    /* Leaderboard */
-    .lb-section { flex: 1; overflow-y: auto; padding: 12px 14px 8px; min-height: 0; }
-    .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; margin-bottom: 8px; }
-    .lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #1a1a1a; margin-bottom: 6px; }
-    .lb-row.lb-me { border: 1px solid #3a2e0a; }
-    .lb-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .lb-info { flex: 1; min-width: 0; }
-    .lb-name { font-size: 13px; font-weight: 600; color: #f0f0f0; }
-    .lb-sub  { font-size: 10px; color: #555; font-family: 'DM Mono', monospace; margin: 2px 0 4px; }
-    .lb-bar-wrap { height: 5px; background: #2a2a2a; border-radius: 3px; }
-    .lb-bar { height: 100%; border-radius: 3px; transition: width 0.4s; min-width: 3px; }
-    .lb-right { text-align: right; flex-shrink: 0; }
-    .lb-doors { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; color: #f0f0f0; line-height: 1; }
-    .lb-es { font-size: 10px; color: #555; font-family: 'DM Mono', monospace; margin-top: 2px; }
+    /* Chart section */
+    .chart-section { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px 8px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
+    .chart-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; }
+    .legend { display: flex; gap: 12px; }
+    .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #666; }
+    .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+    /* The actual chart */
+    .chart-area { flex: 1; min-height: 0; display: flex; align-items: flex-end; gap: 16px; justify-content: center; padding-bottom: 4px; }
+    .rep-group { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; max-width: 80px; }
+    .bars { display: flex; align-items: flex-end; gap: 3px; height: 100%; width: 100%; justify-content: center; }
+    .bar-wrap { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; }
+    .bar { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.4s ease; position: relative; min-height: 0; }
+    .bar.doors   { background: #F5A31A; }
+    .bar.engaged { background: #3b82f6; }
+    .bar.sales   { background: #4ade80; }
+    .bar-num { font-size: 9px; font-family: 'DM Mono', monospace; color: #888; text-align: center; margin-bottom: 2px; height: 12px; line-height: 12px; }
+    .rep-name { font-size: 11px; font-weight: 700; color: #888; text-align: center; white-space: nowrap; }
+    .rep-name.me { color: #F5A31A; }
+    .rep-first { font-size: 9px; color: #444; font-family: 'DM Mono', monospace; text-align: center; margin-top: 1px; }
+
+    .no-data { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #333; }
 
     /* Divider */
-    .divider { height: 1px; background: #222; flex-shrink: 0; position: relative; margin: 0; }
+    .divider { height: 1px; background: #1e1e1e; flex-shrink: 0; position: relative; }
     .divider span { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #0f0f0f; padding: 0 10px; font-size: 10px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
 
     /* Counters */
-    .cnt-section { flex-shrink: 0; padding: 16px 14px 24px; }
-    .counters { display: flex; gap: 10px; margin-bottom: 12px; }
+    .cnt-section { flex-shrink: 0; padding: 14px 14px 22px; }
+    .counters { display: flex; gap: 8px; margin-bottom: 10px; }
     .cnt-card { flex: 1; border-radius: 14px; background: #1a1a1a; border: 1px solid #2a2a2a; overflow: hidden; display: flex; flex-direction: column; }
-    .cnt-tap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 8px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: background 0.1s; }
-    .cnt-tap:active { background: #252525; }
+    .cnt-tap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .cnt-tap:active { background: #222; }
     .cnt-num { font-size: 48px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; }
-    .cnt-doors  .cnt-num { color: #F5A31A; }
-    .cnt-engaged .cnt-num { color: #60a5fa; }
-    .cnt-sales  .cnt-num { color: #4ade80; }
+    .cnt-doors   .cnt-num { color: #F5A31A; }
+    .cnt-engaged .cnt-num { color: #3b82f6; }
+    .cnt-sales   .cnt-num { color: #4ade80; }
     .cnt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #555; margin-top: 5px; }
     .cnt-sub { width: 100%; border: none; border-top: 1px solid #222; background: #141414; color: #444; font-size: 18px; padding: 6px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .cnt-sub:active { color: #aaa; }
 
-    .reset-btn { width: 100%; padding: 9px; background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #444; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.06em; }
-    .reset-btn:active { border-color: #555; color: #888; }
+    .reset-row { display: flex; gap: 8px; align-items: center; }
+    .reset-btn { flex: 1; padding: 8px; background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #444; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; }
+    .reset-btn:active { color: #888; border-color: #555; }
+    .status { font-size: 10px; color: #333; font-family: 'DM Mono', monospace; flex-shrink: 0; }
+    .status.ok  { color: #4ade80; }
+    .status.err { color: #ef4444; }
 
     /* Confirm */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 900; display: none; align-items: center; justify-content: center; }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 900; display: none; align-items: center; justify-content: center; }
     .overlay.open { display: flex; }
     .confirm-box { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 24px 20px; width: 260px; text-align: center; }
     .confirm-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
@@ -66,10 +81,6 @@
     .cbtn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .cbtn-cancel { background: #2a2a2a; color: #aaa; }
     .cbtn-go     { background: #ef4444; color: #fff; }
-
-    .status { font-size: 10px; color: #333; text-align: center; padding: 4px 0 0; font-family: 'DM Mono', monospace; }
-    .status.ok { color: #4ade80; }
-    .status.err { color: #ef4444; }
   </style>
 </head>
 <body>
@@ -79,13 +90,24 @@
     <div class="logo-circle">N</div>
     <div class="logo-text"><span>NEXT</span>LINK</div>
   </div>
-  <span class="hdr-date" id="hdr-date"></span>
-  <a class="back-btn" id="back-link">← Calendar</a>
+  <div class="hdr-right">
+    <span class="hdr-date" id="hdr-date"></span>
+    <a class="back-btn" id="back-link">← Back</a>
+  </div>
 </div>
 
-<div class="lb-section">
-  <div class="section-label">Today's Team</div>
-  <div id="leaderboard"><div style="color:#444;font-size:12px;padding:10px 0;">Connecting…</div></div>
+<div class="chart-section">
+  <div class="chart-header">
+    <div class="chart-title">Today's Team</div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#F5A31A"></div>Doors</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>Engaged</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Sales</div>
+    </div>
+  </div>
+  <div id="chart-area" class="chart-area">
+    <div class="no-data">No data yet today</div>
+  </div>
 </div>
 
 <div class="divider"><span id="my-label">My Counter</span></div>
@@ -93,7 +115,7 @@
 <div class="cnt-section">
   <div class="counters">
     <div class="cnt-card cnt-doors">
-      <div class="cnt-tap" id="tap-doors" onclick="increment('doors')">
+      <div class="cnt-tap" onclick="increment('doors')">
         <div class="cnt-num" id="cnt-doors">0</div>
         <div class="cnt-lbl">Doors</div>
       </div>
@@ -114,8 +136,10 @@
       <button class="cnt-sub" onclick="decrement('sales')">−</button>
     </div>
   </div>
-  <button class="reset-btn" onclick="openReset()">Reset My Counters</button>
-  <div class="status" id="status">connecting…</div>
+  <div class="reset-row">
+    <button class="reset-btn" onclick="openReset()">Reset Mine</button>
+    <span class="status" id="status">connecting…</span>
+  </div>
 </div>
 
 <div class="overlay" id="confirmOverlay">
@@ -133,23 +157,21 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
 var REPS   = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
-var COLORS = { logan:'#F5A31A', brycen:'#3b82f6', sami:'#4ade80', connor:'#a855f7', jacob:'#ef4444' };
+var COLORS = { logan:'#F5A31A', brycen:'#60a5fa', sami:'#34d399', connor:'#c084fc', jacob:'#f87171' };
 var ORDER  = ['logan','brycen','sami','connor','jacob'];
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 var parts = window.location.pathname.split('/').filter(Boolean);
-// parts = ['counter','logan']
 var slug  = (parts[1] || 'logan').toLowerCase();
 if (!REPS[slug]) slug = 'logan';
 var repFirst = REPS[slug].split(' ')[0];
 
-document.getElementById('my-label').textContent = repFirst + "'s Counter";
-document.getElementById('back-link').href = '/' + slug;
+document.getElementById('my-label').textContent  = repFirst + "'s Counter";
+document.getElementById('back-link').href         = '/' + slug;
 var now = new Date();
-document.getElementById('hdr-date').textContent = DN[now.getDay()] + ' ' + MN[now.getMonth()] + ' ' + now.getDate();
+document.getElementById('hdr-date').textContent   = DN[now.getDay()] + ' ' + MN[now.getMonth()] + ' ' + now.getDate();
 
-// Firebase
 firebase.initializeApp({
   apiKey:            "AIzaSyA8swfoYsvJsU0ugfxFmJTs2almBk7DGVE",
   authDomain:        "motion-marketing-e1e45.firebaseapp.com",
@@ -161,49 +183,35 @@ firebase.initializeApp({
 });
 var db = firebase.database();
 
-// Local optimistic counts (so taps feel instant)
-var _local = { doors: 0, engaged: 0, sales: 0 };
+var _local = { doors:0, engaged:0, sales:0 };
 var _data  = {};
 
 function todayKey() {
   var d = new Date();
-  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 }
 function pad(n) { return n < 10 ? '0'+n : ''+n; }
-function fmtTime(ts) {
-  if (!ts) return null;
-  var d = new Date(ts), h = d.getHours(), m = d.getMinutes();
-  var ap = h >= 12 ? 'pm' : 'am'; h = h%12||12;
-  return h + ':' + pad(m) + ' ' + ap;
-}
 
-var dbRef = db.ref('counters/' + todayKey());
-
-// Real-time listener
-dbRef.on('value', function(snap) {
+db.ref('counters/'+todayKey()).on('value', function(snap) {
   _data = snap.val() || {};
-  // Sync local counts to firebase truth
-  var mine = _data[slug] || { doors:0, engaged:0, sales:0 };
+  var mine = _data[slug] || {};
   _local.doors   = mine.doors   || 0;
   _local.engaged = mine.engaged || 0;
   _local.sales   = mine.sales   || 0;
   updateMyDisplay();
-  renderLeaderboard();
-  document.getElementById('status').textContent = '● live';
+  renderChart();
+  document.getElementById('status').textContent   = '● live';
   document.getElementById('status').className = 'status ok';
-}, function(err) {
-  document.getElementById('status').textContent = '● offline';
+}, function() {
+  document.getElementById('status').textContent   = '● offline';
   document.getElementById('status').className = 'status err';
 });
 
 function increment(field) {
-  // Optimistic local update
   _local[field] = (_local[field]||0) + 1;
   updateMyDisplay();
-  // Write to Firebase
-  var ref = db.ref('counters/' + todayKey() + '/' + slug);
-  ref.transaction(function(d) {
-    if (d === null) d = { doors:0, engaged:0, sales:0, firstDoor:null };
+  db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
+    if (!d) d = { doors:0, engaged:0, sales:0, firstDoor:null };
     d[field] = (d[field]||0) + 1;
     if (field === 'doors' && !d.firstDoor) d.firstDoor = Date.now();
     return d;
@@ -213,8 +221,7 @@ function increment(field) {
 function decrement(field) {
   _local[field] = Math.max(0, (_local[field]||0) - 1);
   updateMyDisplay();
-  var ref = db.ref('counters/' + todayKey() + '/' + slug);
-  ref.transaction(function(d) {
+  db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) return d;
     d[field] = Math.max(0, (d[field]||0) - 1);
     return d;
@@ -227,31 +234,51 @@ function updateMyDisplay() {
   document.getElementById('cnt-sales').textContent   = _local.sales;
 }
 
-function renderLeaderboard() {
-  var max = 1;
-  ORDER.forEach(function(s){ max = Math.max(max, (_data[s]||{}).doors||0); });
-  var sorted = ORDER.slice().sort(function(a,b){ return ((_data[b]||{}).doors||0)-((_data[a]||{}).doors||0); });
-  document.getElementById('leaderboard').innerHTML = sorted.map(function(s){
+function renderChart() {
+  var area = document.getElementById('chart-area');
+  // Only show reps with at least 1 tap
+  var active = ORDER.filter(function(s) {
+    var d = _data[s] || {};
+    return (d.doors||0) + (d.engaged||0) + (d.sales||0) > 0;
+  });
+
+  if (!active.length) {
+    area.innerHTML = '<div class="no-data">No data yet today</div>';
+    return;
+  }
+
+  // Max value for scaling
+  var maxVal = 1;
+  active.forEach(function(s) {
+    var d = _data[s] || {};
+    maxVal = Math.max(maxVal, d.doors||0, d.engaged||0, d.sales||0);
+  });
+
+  // Chart height available (get from DOM)
+  var chartH = area.clientHeight || 160;
+  var maxBarH = Math.max(chartH - 32, 60); // leave room for name + number labels
+
+  area.innerHTML = active.map(function(s) {
     var d = _data[s] || { doors:0, engaged:0, sales:0 };
-    var color = COLORS[s];
-    var nm = REPS[s]; var prt = nm.split(' ');
-    var ini = (prt[0][0]+(prt[1]?prt[1][0]:'')).toUpperCase();
-    var first = prt[0];
-    var bar = Math.round(((d.doors||0)/max)*100);
-    var ft = d.firstDoor ? 'First door: '+fmtTime(d.firstDoor) : 'Not started';
-    var me = s === slug;
-    return '<div class="lb-row'+(me?' lb-me':'')+'">'
-      +'<div class="lb-avatar" style="background:'+color+'">'+ini+'</div>'
-      +'<div class="lb-info">'
-        +'<div class="lb-name">'+first+(me?' <span style="color:#F5A31A;font-size:10px;">(you)</span>':'')+'</div>'
-        +'<div class="lb-sub">'+ft+'</div>'
-        +'<div class="lb-bar-wrap"><div class="lb-bar" style="width:'+bar+'%;background:'+color+'"></div></div>'
-      +'</div>'
-      +'<div class="lb-right">'
-        +'<div class="lb-doors">'+(d.doors||0)+'</div>'
-        +'<div class="lb-es">E:'+(d.engaged||0)+' S:'+(d.sales||0)+'</div>'
-      +'</div>'
-      +'</div>';
+    var first = REPS[s].split(' ')[0];
+    var isMe  = s === slug;
+
+    function barHTML(val, cls) {
+      var h = Math.round((val / maxVal) * maxBarH);
+      return '<div class="bar-wrap">'
+        + '<div class="bar-num">' + (val > 0 ? val : '') + '</div>'
+        + '<div class="bar ' + cls + '" style="height:' + h + 'px"></div>'
+        + '</div>';
+    }
+
+    return '<div class="rep-group">'
+      + '<div class="bars" style="height:' + maxBarH + 'px">'
+        + barHTML(d.doors||0,   'doors')
+        + barHTML(d.engaged||0, 'engaged')
+        + barHTML(d.sales||0,   'sales')
+      + '</div>'
+      + '<div class="rep-name' + (isMe ? ' me' : '') + '">' + first + '</div>'
+    + '</div>';
   }).join('');
 }
 
