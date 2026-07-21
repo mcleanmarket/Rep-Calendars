@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v11 -->
+  <!-- counter-v13 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -31,8 +31,8 @@
     .lb-name-lbl { width: 52px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: #999; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .lb-row.me .lb-name-lbl { color: #F5A31A; }
     .lb-track { flex: 1; min-width: 0; }
-    .lb-bar { display: flex; width: -webkit-fit-content; width: fit-content; max-width: 100%; height: 30px; border-radius: 7px; overflow: hidden; box-sizing: border-box; }
-    .lb-seg { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 6px; font-family: 'DM Mono', monospace; font-weight: 700; overflow: hidden; white-space: nowrap; flex-grow: 0; flex-shrink: 1; flex-basis: auto; min-width: 30px; box-sizing: border-box; transition: flex-basis 0.3s ease; }
+    .lb-bar { display: flex; max-width: 100%; height: 30px; border-radius: 7px; overflow: hidden; box-sizing: border-box; transition: width 0.3s ease; }
+    .lb-seg { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 5px; font-family: 'DM Mono', monospace; font-weight: 700; overflow: hidden; white-space: nowrap; flex-grow: 0; flex-shrink: 1; flex-basis: 0; min-width: 32px; box-sizing: border-box; }
     .seg-doors { background: #F5A31A; color: #241900; font-size: 14px; }
     .seg-eng   { background: #3b82f6; color: #fff;    font-size: 13px; }
     .seg-sale  { background: #4ade80; color: #0f3320; font-size: 13px; }
@@ -100,20 +100,20 @@
 <div class="divider"><span id="my-label">My Counter</span></div>
 
 <div class="cnt-section">
-  <div class="cnt-row cnt-sales" id="row-sales" onclick="increment('sales')">
-    <button class="cnt-sub" onclick="event.stopPropagation();decrement('sales')">&minus;</button>
+  <div class="cnt-row cnt-sales" id="row-sales">
+    <button class="cnt-sub" id="sub-sales">&minus;</button>
     <div class="cnt-dot"></div>
     <div class="cnt-lbl">Sales</div>
     <div class="cnt-num" id="cnt-sales">0</div>
   </div>
-  <div class="cnt-row cnt-engaged" id="row-engaged" onclick="increment('engaged')">
-    <button class="cnt-sub" onclick="event.stopPropagation();decrement('engaged')">&minus;</button>
+  <div class="cnt-row cnt-engaged" id="row-engaged">
+    <button class="cnt-sub" id="sub-engaged">&minus;</button>
     <div class="cnt-dot"></div>
     <div class="cnt-lbl">Engaged</div>
     <div class="cnt-num" id="cnt-engaged">0</div>
   </div>
-  <div class="cnt-row cnt-doors" id="row-doors" onclick="increment('doors')">
-    <button class="cnt-sub" onclick="event.stopPropagation();decrement('doors')">&minus;</button>
+  <div class="cnt-row cnt-doors" id="row-doors">
+    <button class="cnt-sub" id="sub-doors">&minus;</button>
     <div class="cnt-dot"></div>
     <div class="cnt-lbl">Doors</div>
     <div class="cnt-num" id="cnt-doors">0</div>
@@ -128,8 +128,8 @@ var REPS   = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi'
 var ORDER  = ['logan','brycen','sami','connor','jacob'];
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var UNIT_PX = 6;   // px of bar length per door / engaged / sale
-var MIN_SEG = 30;  // min px per segment so its number is always readable
+var FULL_UNITS = 50; // total across all segments that fills the bar to full width
+var MIN_SEG    = 32; // min px per segment so its number always shows
 
 var parts = window.location.pathname.split('/').filter(Boolean);
 var slug  = (parts[1] || 'logan').toLowerCase();
@@ -247,21 +247,38 @@ function renderChart() {
     var doors = d.doors   || 0;
     var eng   = d.engaged || 0;
     var sales = d.sales   || 0;
-    // Each count = UNIT_PX wide, with a shared floor so every segment always
-    // shows its number. Equal counts => equal widths. Independent of teammates.
-    function segW(n) { return Math.max(MIN_SEG, n * UNIT_PX); }
+    var total = doors + eng + sales;
+    // Bar length grows with the TOTAL: from a floor (just enough to show the
+    // numbers) up to full width at FULL_UNITS, then stays full. Segments split
+    // the bar proportionally to their counts, each kept >= MIN_SEG.
+    var nSeg   = (doors>0?1:0) + (eng>0?1:0) + (sales>0?1:0);
+    var floorW = nSeg * MIN_SEG;
+    var frac   = Math.min(1, total / FULL_UNITS);
+    var barW   = 'calc(' + floorW + 'px + (100% - ' + floorW + 'px) * ' + frac + ')';
 
     var segs = '';
-    if (doors > 0) segs += '<div class="lb-seg seg-doors" style="flex-basis:' + segW(doors) + 'px">' + doors + '</div>';
-    if (eng   > 0) segs += '<div class="lb-seg seg-eng"   style="flex-basis:' + segW(eng)   + 'px">' + eng   + '</div>';
-    if (sales > 0) segs += '<div class="lb-seg seg-sale"  style="flex-basis:' + segW(sales) + 'px">' + sales + '</div>';
+    if (doors > 0) segs += '<div class="lb-seg seg-doors" style="flex-grow:' + doors + '">' + doors + '</div>';
+    if (eng   > 0) segs += '<div class="lb-seg seg-eng"   style="flex-grow:' + eng   + '">' + eng   + '</div>';
+    if (sales > 0) segs += '<div class="lb-seg seg-sale"  style="flex-grow:' + sales + '">' + sales + '</div>';
 
     return '<div class="lb-row' + (isMe ? ' me' : '') + '">'
       + '<span class="lb-name-lbl">' + first + '</span>'
-      + '<div class="lb-track"><div class="lb-bar">' + segs + '</div></div>'
+      + '<div class="lb-track"><div class="lb-bar" style="width:' + barW + '">' + segs + '</div></div>'
     + '</div>';
   }).join('');
 }
+
+/* ── One clean action per tap (prevents iOS ghost-click double-fire) ── */
+function bindTap(el, fn, stop) {
+  if (!el) return;
+  var last = 0;
+  el.addEventListener('touchend', function(e) { if (stop) e.stopPropagation(); e.preventDefault(); last = Date.now(); fn(); }, { passive: false });
+  el.addEventListener('click', function(e) { if (stop) e.stopPropagation(); if (Date.now() - last < 700) return; fn(); });
+}
+['doors','engaged','sales'].forEach(function(fld) {
+  bindTap(document.getElementById('row-' + fld), function() { increment(fld); });
+  bindTap(document.getElementById('sub-' + fld), function() { decrement(fld); }, true);
+});
 </script>
 </body>
 </html>
