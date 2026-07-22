@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v20 -->
+  <!-- counter-v21 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -26,20 +26,21 @@
     .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #666; }
     .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
 
-    /* Stacked horizontal leaderboard */
-    .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 4px 0; overflow: hidden; }
-    .lb-row { display: flex; align-items: center; gap: 9px; }
-    .lb-name-lbl { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.1; overflow: hidden; }
-    .lb-name-lbl .nm { font-size: 12px; font-weight: 700; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .lb-name-lbl .ts { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; white-space: nowrap; margin-top: 1px; }
-    .lb-row.me .lb-name-lbl .nm { color: #F5A31A; }
-    .lb-track { flex: 1; min-width: 0; }
-    .lb-bar { display: flex; max-width: 100%; height: 30px; border-radius: 7px; overflow: hidden; box-sizing: border-box; transition: width 0.3s ease; }
-    .lb-seg { display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 5px; font-family: 'DM Mono', monospace; font-weight: 700; overflow: hidden; white-space: nowrap; flex-grow: 0; flex-shrink: 1; flex-basis: 0; min-width: 32px; box-sizing: border-box; }
-    .seg-doors { background: #F5A31A; color: #241900; font-size: 14px; }
-    .seg-eng   { background: #3b82f6; color: #fff;    font-size: 13px; }
-    .seg-sale  { background: #4ade80; color: #0f3320; font-size: 13px; }
-    .lb-row.me .lb-bar { box-shadow: 0 0 0 2px rgba(255,255,255,0.55); }
+    /* Funnel leaderboard (Doors -> Convos -> Sales stacked per rep) */
+    .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 13px; padding: 4px 0; overflow: hidden; }
+    .rep-block { display: flex; align-items: center; gap: 10px; }
+    .rep-block.me .rep-label .nm { color: #F5A31A; }
+    .rep-label { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.1; overflow: hidden; }
+    .rep-label .nm { font-size: 12px; font-weight: 700; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .rep-label .ts { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; white-space: nowrap; margin-top: 1px; }
+    .rep-bars { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .stack-row { display: flex; align-items: center; }
+    .stack-bar { height: 15px; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding: 0 5px; box-sizing: border-box; min-width: 26px; flex-shrink: 0; transition: width 0.3s ease; }
+    .stack-num { font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace; }
+    .sb-doors  { background: #F5A31A; } .sb-doors  .stack-num { color: #241900; }
+    .sb-convos { background: #3b82f6; } .sb-convos .stack-num { color: #fff; }
+    .sb-sales  { background: #4ade80; } .sb-sales  .stack-num { color: #0f3320; }
+    .stack-pct { font-size: 9px; font-family: 'DM Mono', monospace; color: #888; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
     .no-data { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #333; }
 
     /* Divider */
@@ -293,30 +294,36 @@ function renderChart() {
   // Sort by doors, descending
   active.sort(function(a,b){ return ((_data[b]||{}).doors||0) - ((_data[a]||{}).doors||0); });
 
+  // All three bars share ONE scale: full width at FULL_UNITS, capped after that
+  function barW(n) { return Math.min(100, n / FULL_UNITS * 100); }
+
   area.innerHTML = active.map(function(s) {
-    var d     = _data[s] || { doors:0, engaged:0, sales:0 };
-    var first = REPS[s].split(' ')[0];
-    var isMe  = s === slug;
-    var doors = d.doors   || 0;
-    var eng   = d.engaged || 0;
-    var sales = d.sales   || 0;
-    var total = doors + eng + sales;
-    // Bar length grows with the TOTAL: from a floor (just enough to show the
-    // numbers) up to full width at FULL_UNITS, then stays full. Segments split
-    // the bar proportionally to their counts, each kept >= MIN_SEG.
-    var nSeg   = (doors>0?1:0) + (eng>0?1:0) + (sales>0?1:0);
-    var floorW = nSeg * MIN_SEG;
-    var frac   = Math.min(1, total / FULL_UNITS);
-    var barW   = 'calc(' + floorW + 'px + (100% - ' + floorW + 'px) * ' + frac + ')';
+    var d      = _data[s] || { doors:0, engaged:0, sales:0 };
+    var first  = REPS[s].split(' ')[0];
+    var isMe   = s === slug;
+    var doors  = d.doors   || 0;
+    var convos = d.engaged || 0;
+    var sales  = d.sales   || 0;
+    // Step-down conversion rates (what % carried to the next stage)
+    var convPct = doors  > 0 ? Math.round(convos / doors  * 100) : null; // convos per door
+    var salePct = convos > 0 ? Math.round(sales  / convos * 100) : null; // sales per convo
 
-    var segs = '';
-    if (doors > 0) segs += '<div class="lb-seg seg-doors" style="flex-grow:' + doors + '">' + doors + '</div>';
-    if (eng   > 0) segs += '<div class="lb-seg seg-eng"   style="flex-grow:' + eng   + '">' + eng   + '</div>';
-    if (sales > 0) segs += '<div class="lb-seg seg-sale"  style="flex-grow:' + sales + '">' + sales + '</div>';
+    function bar(cls, count, pct) {
+      return '<div class="stack-row">'
+        + '<div class="stack-bar ' + cls + '" style="width:' + barW(count) + '%"><span class="stack-num">' + count + '</span></div>'
+        + (pct !== null ? '<span class="stack-pct">' + pct + '%</span>' : '')
+      + '</div>';
+    }
 
-    return '<div class="lb-row' + (isMe ? ' me' : '') + '">'
-      + '<span class="lb-name-lbl"><span class="nm">' + first + '</span>'        + (d.firstDoor ? '<span class="ts">' + fmtTime(d.firstDoor) + '</span>' : '')      + '</span>'
-      + '<div class="lb-track"><div class="lb-bar" style="width:' + barW + '">' + segs + '</div></div>'
+    var ts = d.firstDoor ? '<span class="ts">' + fmtTime(d.firstDoor) + '</span>' : '';
+
+    return '<div class="rep-block' + (isMe ? ' me' : '') + '">'
+      + '<div class="rep-label"><span class="nm">' + first + '</span>' + ts + '</div>'
+      + '<div class="rep-bars">'
+        + bar('sb-sales',  sales,  salePct)
+        + bar('sb-convos', convos, convPct)
+        + bar('sb-doors',  doors,  null)
+      + '</div>'
     + '</div>';
   }).join('');
 }
