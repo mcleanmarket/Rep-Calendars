@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v23 -->
+  <!-- counter-v24 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -29,7 +29,7 @@
     /* Funnel leaderboard (Doors -> Convos -> Sales stacked per rep) */
     .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 13px; padding: 4px 0; overflow: hidden; }
     .rep-block { display: flex; align-items: center; gap: 10px; }
-    .rep-block.me .rep-label .nm { color: #F5A31A; }
+    .rep-block.me .rep-label .nm { color: #fff; font-weight: 800; font-size: 13px; }
     .rep-label { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.1; overflow: hidden; }
     .rep-label .nm { font-size: 12px; font-weight: 700; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .rep-label .ts { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; white-space: nowrap; margin-top: 1px; }
@@ -380,4 +380,4 @@ bindTap(document.getElementById('cancel40'), close40);
 document.getElementById('overlay40').addEventListener('click', function(e) { if (e.target === this) close40(); });
 </script>
 </body>
-</html>s
+</html>
