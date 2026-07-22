@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v21 -->
+  <!-- counter-v22 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -35,12 +35,12 @@
     .rep-label .ts { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; white-space: nowrap; margin-top: 1px; }
     .rep-bars { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
     .stack-row { display: flex; align-items: center; }
-    .stack-bar { height: 15px; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding: 0 5px; box-sizing: border-box; min-width: 26px; flex-shrink: 0; transition: width 0.3s ease; }
-    .stack-num { font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace; }
-    .sb-doors  { background: #F5A31A; } .sb-doors  .stack-num { color: #241900; }
-    .sb-convos { background: #3b82f6; } .sb-convos .stack-num { color: #fff; }
-    .sb-sales  { background: #4ade80; } .sb-sales  .stack-num { color: #0f3320; }
-    .stack-pct { font-size: 9px; font-family: 'DM Mono', monospace; color: #888; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
+    .stack-bar { height: 15px; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding: 0 5px; box-sizing: border-box; min-width: 0; flex-shrink: 0; overflow: hidden; transition: width 0.3s ease; }
+    .stack-num { font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace; color: #141414; }
+    .sb-doors  { background: #F5A31A; }
+    .sb-convos { background: #60a5fa; }
+    .sb-sales  { background: #4ade80; }
+    .stack-pct { font-size: 9px; font-family: 'DM Mono', monospace; color: #f0f0f0; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
     .no-data { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #333; }
 
     /* Divider */
@@ -52,23 +52,23 @@
     .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.06s ease, background 0.06s ease, border-color 0.06s ease; touch-action: manipulation; }
     .cnt-row:active { transform: scale(0.98); }
     .cnt-doors:active   { background: #241c0c; border-color: #F5A31A; }
-    .cnt-engaged:active { background: #0f1a2e; border-color: #3b82f6; }
+    .cnt-engaged:active { background: #0f1a2e; border-color: #60a5fa; }
     .cnt-sales:active   { background: #0f2418; border-color: #4ade80; }
     /* JS-driven press animation (reliable on iOS, unlike :active) */
     .cnt-doors.tapped   { animation: tapDoors 0.18s ease; }
     .cnt-engaged.tapped { animation: tapEng   0.18s ease; }
     .cnt-sales.tapped   { animation: tapSale  0.18s ease; }
     @keyframes tapDoors { 0% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } 35% { transform: scale(0.96); background:#241c0c; border-color:#F5A31A; } 100% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } }
-    @keyframes tapEng   { 0% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } 35% { transform: scale(0.96); background:#0f1a2e; border-color:#3b82f6; } 100% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } }
+    @keyframes tapEng   { 0% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } 35% { transform: scale(0.96); background:#0f1a2e; border-color:#60a5fa; } 100% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } }
     @keyframes tapSale  { 0% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } 35% { transform: scale(0.96); background:#0f2418; border-color:#4ade80; } 100% { transform: scale(1); background:#1a1a1a; border-color:#2a2a2a; } }
     .cnt-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
     .cnt-doors   .cnt-dot { background: #F5A31A; }
-    .cnt-engaged .cnt-dot { background: #3b82f6; }
+    .cnt-engaged .cnt-dot { background: #60a5fa; }
     .cnt-sales   .cnt-dot { background: #4ade80; }
     .cnt-lbl { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; }
     .cnt-num { margin-left: auto; font-size: 42px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; }
     .cnt-doors   .cnt-num { color: #F5A31A; }
-    .cnt-engaged .cnt-num { color: #3b82f6; }
+    .cnt-engaged .cnt-num { color: #60a5fa; }
     .cnt-sales   .cnt-num { color: #4ade80; }
     .cnt-num.pop { animation: popNum 0.18s ease; }
     @keyframes popNum { 0% { transform: scale(1); } 40% { transform: scale(1.24); } 100% { transform: scale(1); } }
@@ -118,7 +118,7 @@
     <div class="chart-title">Today's Team</div>
     <div class="legend">
       <div class="leg-item"><div class="leg-dot" style="background:#F5A31A"></div>Doors</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>Convos</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div>Convos</div>
       <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Sales</div>
     </div>
   </div>
@@ -315,15 +315,17 @@ function renderChart() {
       + '</div>';
     }
 
+    // Only show a bar once it has at least 1
+    var rows = '';
+    if (sales  > 0) rows += bar('sb-sales',  sales,  salePct);
+    if (convos > 0) rows += bar('sb-convos', convos, convPct);
+    if (doors  > 0) rows += bar('sb-doors',  doors,  null);
+
     var ts = d.firstDoor ? '<span class="ts">' + fmtTime(d.firstDoor) + '</span>' : '';
 
     return '<div class="rep-block' + (isMe ? ' me' : '') + '">'
       + '<div class="rep-label"><span class="nm">' + first + '</span>' + ts + '</div>'
-      + '<div class="rep-bars">'
-        + bar('sb-sales',  sales,  salePct)
-        + bar('sb-convos', convos, convPct)
-        + bar('sb-doors',  doors,  null)
-      + '</div>'
+      + '<div class="rep-bars">' + rows + '</div>'
     + '</div>';
   }).join('');
 }
