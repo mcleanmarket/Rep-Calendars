@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v22 -->
+  <!-- counter-v23 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -35,7 +35,7 @@
     .rep-label .ts { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; white-space: nowrap; margin-top: 1px; }
     .rep-bars { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
     .stack-row { display: flex; align-items: center; }
-    .stack-bar { height: 15px; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding: 0 5px; box-sizing: border-box; min-width: 0; flex-shrink: 0; overflow: hidden; transition: width 0.3s ease; }
+    .stack-bar { height: 15px; border-radius: 4px; display: flex; align-items: center; justify-content: center; padding: 0 3px; box-sizing: border-box; min-width: 14px; flex-shrink: 0; overflow: hidden; transition: width 0.3s ease; }
     .stack-num { font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace; color: #141414; }
     .sb-doors  { background: #F5A31A; }
     .sb-convos { background: #60a5fa; }
@@ -380,4 +380,4 @@ bindTap(document.getElementById('cancel40'), close40);
 document.getElementById('overlay40').addEventListener('click', function(e) { if (e.target === this) close40(); });
 </script>
 </body>
-</html>
+</html>s
