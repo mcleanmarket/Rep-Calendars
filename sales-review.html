@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v5 -->
+<!-- sales-review-v6 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -52,7 +52,6 @@
 <div class="hdr">
   <h1>Sales Review</h1>
   <div class="hdr-controls">
-    <input type="password" id="apiKey" placeholder="Anthropic API key">
     <input type="date" id="dayPicker">
     <button class="btn primary" id="copyAllText">Copy all text blocks</button>
   </div>
@@ -106,10 +105,6 @@ function fmtTime(ms){
 var dayPicker = document.getElementById('dayPicker');
 dayPicker.value = todayStr();
 dayPicker.addEventListener('change', function(){ loadDay(dayPicker.value); });
-
-var apiKeyEl = document.getElementById('apiKey');
-apiKeyEl.value = localStorage.getItem('ak') || '';
-apiKeyEl.addEventListener('input', function(e){ localStorage.setItem('ak', e.target.value.trim()); });
 
 var _currentData = {}; // rep -> {pushId: entry}
 
@@ -253,60 +248,19 @@ document.getElementById('copyAllText').addEventListener('click', function(){
 loadDay(todayStr());
 
 /* ── AI extraction: turn each logged entry into a Master-sheet row ── */
-var MODEL = "claude-haiku-4-5-20251001";
-
-var EXTRACT_SYSTEM = `You read Nextlink Internet order confirmation data \u2014 either a screenshot image or raw text copied from the order portal \u2014 and return structured JSON.
-
-Return ONLY a JSON object. No markdown, no code fences, no commentary.
-
-Keys (use exactly these, all of them, always): "account_number", "customer_name", "phone", "email", "address", "plan_name", "price", "install_date"
-
-Field notes:
-- account_number: the number in the orange "Account #" banner.
-- address: the full service address on one line, exactly as shown.
-- plan_name: the internet plan name only (e.g. "FiberNEXT500", "NEXT500"). Do not include price.
-- price: the bold "MONTHLY TOTAL" figure, number only, no dollar sign.
-- install_date: YYYY-MM-DD if a specific date is shown. If it says "No installation date has been selected" or similar, or no date appears at all, set this to null \u2014 that is a valid, expected state, not an error.
-
-Rules:
-- Copy values verbatim. Do not reformat, expand abbreviations, or infer values not shown.
-- If a field isn't present, set it to null. Never guess.
-- Phone: digits only, no punctuation.
-- If the input isn't a Nextlink order at all, return {"error":"not_an_order"}.`;
-
-function imageUrlToBase64(url){
-  return fetch(url).then(function(r){ return r.blob(); }).then(function(blob){
-    return new Promise(function(resolve, reject){
-      var reader = new FileReader();
-      reader.onload = function(){ resolve({ data: reader.result.split(',')[1], mediaType: blob.type || 'image/jpeg' }); };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  });
-}
+/* System prompt and API key both live server-side now, in /api/extract.js */
 
 function extractEntry(entry){
-  var key = apiKeyEl.value.trim();
-  var content;
-
   function callApi(contentBlocks){
-    return fetch('https://api.anthropic.com/v1/messages', {
+    return fetch('/api/extract', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 500,
-        system: EXTRACT_SYSTEM,
-        messages: [{ role: 'user', content: contentBlocks }]
-      })
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ content: contentBlocks })
     }).then(function(r){
-      if (!r.ok) return r.text().then(function(t){ throw new Error('API ' + r.status + ': ' + t.slice(0,150)); });
-      return r.json();
+      return r.json().then(function(data){
+        if (!r.ok) throw new Error((data && data.error && (data.error.message || data.error)) || ('API ' + r.status));
+        return data;
+      });
     }).then(function(data){
       var text = data.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
       var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
@@ -316,12 +270,10 @@ function extractEntry(entry){
   }
 
   if (entry.type === 'photo' && entry.url){
-    return imageUrlToBase64(entry.url).then(function(img){
-      return callApi([
-        { type:'image', source:{ type:'base64', media_type: img.mediaType, data: img.data } },
-        { type:'text', text: 'Extract the order details.' + (entry.text ? '\n\nAdditional pasted text from the rep:\n' + entry.text : '') }
-      ]);
-    });
+    return callApi([
+      { type:'image', source:{ type:'url', url: entry.url } },
+      { type:'text', text: 'Extract the order details.' + (entry.text ? '\n\nAdditional pasted text from the rep:\n' + entry.text : '') }
+    ]);
   } else {
     return callApi([{ type:'text', text: 'Extract the order details from this pasted text:\n\n' + (entry.text || '') }]);
   }
@@ -330,10 +282,8 @@ function extractEntry(entry){
 var _lastResults = []; // rows in Master-sheet column order
 
 document.getElementById('processDay').addEventListener('click', function(){
-  var key = apiKeyEl.value.trim();
   var statusEl = document.getElementById('processStatus');
   var resultsWrap = document.getElementById('resultsWrap');
-  if (!key){ statusEl.textContent = 'Paste your Anthropic API key up top first.'; statusEl.className = 'process-status err'; return; }
 
   var day = dayPicker.value;
   var jobs = [];
@@ -373,11 +323,37 @@ document.getElementById('processDay').addEventListener('click', function(){
   runNext(0);
 });
 
+// Hardcoded plan/price standardization \u2014 the screenshot's own price is never used.
+// STANDARD tier speeds are for "NEXT..." plans (including ones prefixed "FiberNEXT").
+// FIBER tier speeds are for plans named just "Fiber..." with no "NEXT" in the name.
+var STANDARD_PRICES = { 100:30, 200:30, 300:50, 400:50, 500:50, 1000:80 };
+var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
+
+function standardizePlan(rawPlan){
+  if (!rawPlan) return { plan:'', price:'' };
+  var speedMatch = rawPlan.match(/(\d{2,4})/);
+  if (!speedMatch) return { plan: rawPlan, price:'' };
+  var speed = parseInt(speedMatch[1], 10);
+  var isNext = /next/i.test(rawPlan);
+  if (isNext){
+    var p1 = STANDARD_PRICES[speed];
+    return { plan: 'NEXT' + speed, price: (p1 != null ? p1 : '') };
+  } else {
+    var p2 = FIBER_PRICES[speed];
+    return { plan: 'Fiber' + speed, price: (p2 != null ? p2 : '') };
+  }
+}
+
 function buildRow(day, repSlug, entry, fields, flagged, errMsg){
-  var status = fields.install_date ? 'Scheduled' : 'Pending';
+  var std = standardizePlan(fields.plan_raw);
+  var flagParts = [];
+  if (errMsg) flagParts.push(errMsg);
+  if (!flagged && fields.flag) flagParts.push(fields.flag);
+  if (!flagged && fields.plan_raw && std.price === '') flagParts.push('Unrecognized plan/speed \u2014 set price manually: "' + fields.plan_raw + '"');
+
   return {
     flagged: flagged,
-    errMsg: errMsg || '',
+    errMsg: flagParts.join(' \u2014 '),
     dateSold: day,
     repName: REPS[repSlug],
     accId: fields.account_number || '',
@@ -385,10 +361,10 @@ function buildRow(day, repSlug, entry, fields, flagged, errMsg){
     customerName: fields.customer_name || '',
     email: fields.email || '',
     address: fields.address || '',
-    plan: fields.plan_name || '',
-    price: fields.price || '',
+    plan: std.plan,
+    price: std.price,
     installDate: fields.install_date || '',
-    notes: entry.notes || '',
+    notes: (entry.notes || '').trim(), // strictly the rep's own typed note \u2014 nothing invented
     status: fields.install_date ? 'Scheduled' : (flagged ? 'Needs review' : 'Pending')
   };
 }
@@ -405,8 +381,11 @@ function renderResultsTable(){
           var cls = (c === 'status') ? ' class="status-' + row[c] + '"' : (row.flagged ? ' class="flag"' : '');
           return '<td' + cls + '>' + escapeHtml(row[c]) + '</td>';
         }).join('') + '</tr>';
-        if (row.flagged && row.errMsg){
-          rowHtml += '<tr><td colspan="' + cols.length + '" style="color:#f87171; font-style:italic; font-size:10.5px; white-space:normal;">Error: ' + escapeHtml(row.errMsg) + '</td></tr>';
+        if (row.errMsg){
+          var isHardError = row.flagged;
+          var label = isHardError ? 'Error: ' : 'Flag: ';
+          var color = isHardError ? '#f87171' : '#f5a31a';
+          rowHtml += '<tr><td colspan="' + cols.length + '" style="color:' + color + '; font-style:italic; font-size:10.5px; white-space:normal;">' + label + escapeHtml(row.errMsg) + '</td></tr>';
         }
         return rowHtml;
       }).join('')
