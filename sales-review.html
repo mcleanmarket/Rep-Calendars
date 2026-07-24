@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- sales-review-v1 -->
+<title>Sales Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:#0f0f0f;color:#f0f0f0;min-height:100vh;padding-bottom:60px}
+  .hdr{background:#0a0a0a;border-bottom:1px solid #1e1e1e;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
+  .hdr h1{font-size:15px;font-weight:800}
+  .hdr-controls{display:flex;gap:8px;align-items:center}
+  input[type=date]{background:#1a1a1a;border:1px solid #2a2a2a;color:#f0f0f0;border-radius:8px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:13px}
+  .btn{background:#1a1a1a;border:1px solid #2a2a2a;color:#e6e6e6;font-size:12px;font-weight:700;padding:8px 12px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif}
+  .btn:active{background:#2a2a2a}
+  .btn.primary{background:#4ade80;color:#0a2412;border-color:#4ade80}
+  .wrap{padding:16px}
+  .empty{text-align:center;color:#444;font-size:13px;padding:60px 20px}
+  .rep-group{margin-bottom:22px}
+  .rep-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .rep-hd .nm{font-size:14px;font-weight:800}
+  .rep-hd .ct{font-size:11px;color:#666;font-family:'DM Mono',monospace}
+  .item{background:#161616;border:1px solid #262626;border-radius:12px;padding:12px;margin-bottom:8px}
+  .item-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .item-time{font-size:11px;color:#666;font-family:'DM Mono',monospace}
+  .thumb{width:100%;max-width:260px;border-radius:8px;border:1px solid #2a2a2a;display:block;margin-bottom:8px;cursor:pointer}
+  .txt-block{background:#0e0e0e;border:1px solid #232323;border-radius:8px;padding:10px;font-size:12.5px;line-height:1.5;color:#ccc;white-space:pre-wrap;max-height:160px;overflow-y:auto;margin-bottom:8px}
+  .item-actions{display:flex;gap:8px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#fff;color:#111;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:900}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>Sales Review</h1>
+  <div class="hdr-controls">
+    <input type="date" id="dayPicker">
+    <button class="btn primary" id="copyAllText">Copy all text blocks</button>
+  </div>
+</div>
+
+<div class="wrap" id="content">
+  <div class="empty">Loading&hellip;</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+var REPS = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
+var ORDER = ['logan','brycen','sami','connor','jacob'];
+
+firebase.initializeApp({
+  apiKey:            "AIzaSyA8swfoYsvJsU0ugfxFmJTs2almBk7DGVE",
+  authDomain:        "motion-marketing-e1e45.firebaseapp.com",
+  databaseURL:       "https://motion-marketing-e1e45-default-rtdb.firebaseio.com",
+  projectId:         "motion-marketing-e1e45",
+  storageBucket:     "motion-marketing-e1e45.firebasestorage.app",
+  messagingSenderId: "356161676852",
+  appId:             "1:356161676852:web:d5591aad4c99f06a088c61"
+});
+var db = firebase.database();
+
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function fmtTime(ms){
+  var parts = new Intl.DateTimeFormat('en-US', {
+    timeZone:'America/Chicago', hour:'numeric', minute:'2-digit', hour12:true
+  }).formatToParts(new Date(ms));
+  var o = {}; parts.forEach(function(p){ o[p.type]=p.value; });
+  return o.hour + ':' + o.minute + (o.dayPeriod||'').toLowerCase().charAt(0);
+}
+
+var dayPicker = document.getElementById('dayPicker');
+dayPicker.value = todayStr();
+dayPicker.addEventListener('change', function(){ loadDay(dayPicker.value); });
+
+var _currentData = {}; // rep -> {pushId: entry}
+
+function loadDay(day){
+  document.getElementById('content').innerHTML = '<div class="empty">Loading&hellip;</div>';
+  db.ref('salesLog/' + day).once('value').then(function(snap){
+    _currentData = snap.val() || {};
+    render();
+  }).catch(function(){
+    document.getElementById('content').innerHTML = '<div class="empty">Couldn\'t load that day.</div>';
+  });
+}
+
+function render(){
+  var wrap = document.getElementById('content');
+  var reps = ORDER.filter(function(s){ return _currentData[s]; });
+
+  if (!reps.length){
+    wrap.innerHTML = '<div class="empty">No sales logged this day.</div>';
+    return;
+  }
+
+  wrap.innerHTML = reps.map(function(s){
+    var entries = Object.keys(_currentData[s]).map(function(id){
+      var e = _currentData[s][id]; e._id = id; return e;
+    }).sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
+
+    var itemsHtml = entries.map(function(e){
+      var time = e.ts ? fmtTime(e.ts) : '';
+      var body = '';
+      if (e.type === 'photo' && e.url){
+        body += '<img class="thumb" src="' + e.url + '" onclick="window.open(\'' + e.url + '\',\'_blank\')">';
+        if (e.text) body += '<div class="txt-block">' + escapeHtml(e.text) + '</div>';
+        body += '<div class="item-actions">'
+              + '<button class="btn" onclick="copyImage(\'' + e.url + '\', this)">Copy image</button>'
+              + '<button class="btn" onclick="window.open(\'' + e.url + '\',\'_blank\')">Open full size</button>'
+              + '</div>';
+      } else {
+        body += '<div class="txt-block">' + escapeHtml(e.text || '') + '</div>'
+              + '<div class="item-actions"><button class="btn" onclick="copyText(this)" data-text="' + attrEscape(e.text||'') + '">Copy text</button></div>';
+      }
+      return '<div class="item"><div class="item-top"><span class="item-time">' + time + '</span></div>' + body + '</div>';
+    }).join('');
+
+    return '<div class="rep-group">'
+      + '<div class="rep-hd"><span class="nm">' + REPS[s].split(' ')[0] + '</span><span class="ct">' + entries.length + ' logged</span></div>'
+      + itemsHtml
+    + '</div>';
+  }).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+}
+function attrEscape(s){
+  return String(s).replace(/"/g,'&quot;').replace(/\n/g,'&#10;');
+}
+
+var _toastT;
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+function copyText(btn){
+  var text = btn.getAttribute('data-text');
+  navigator.clipboard.writeText(text).then(function(){ toast('Text copied'); })
+    .catch(function(){ toast('Copy failed'); });
+}
+
+function copyImage(url, btn){
+  fetch(url).then(function(r){ return r.blob(); }).then(function(blob){
+    return navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
+  }).then(function(){ toast('Image copied'); })
+  .catch(function(){ toast('Copy failed \u2014 try "Open full size" and save instead'); });
+}
+
+// Gathers every text-type entry across all reps for the current day into one clipboard blob
+document.getElementById('copyAllText').addEventListener('click', function(){
+  var out = [];
+  ORDER.forEach(function(s){
+    if (!_currentData[s]) return;
+    Object.keys(_currentData[s]).forEach(function(id){
+      var e = _currentData[s][id];
+      if (e.type === 'text' && e.text){
+        out.push('--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ') ---\n' + e.text);
+      } else if (e.type === 'photo' && e.text){
+        out.push('--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ', attached to screenshot) ---\n' + e.text);
+      }
+    });
+  });
+  if (!out.length){ toast('No text blocks this day'); return; }
+  navigator.clipboard.writeText(out.join('\n\n')).then(function(){ toast('All text copied'); })
+    .catch(function(){ toast('Copy failed'); });
+});
+
+loadDay(todayStr());
+</script>
+</body>
+</html>
