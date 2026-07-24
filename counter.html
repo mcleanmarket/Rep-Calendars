@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v35 -->
+  <!-- counter-v36 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -419,7 +419,7 @@ saleFileInput.addEventListener('change', function(e) {
     saleBlob = blob;
     salePreviewEl.src = url;
     salePreviewWrapEl.classList.add('show');
-    saleFileBtnEl.textContent = 'Screenshot selected \u2014 tap to change';
+    saleFileBtnEl.style.display = 'none';
     salePasteSectionEl.style.display = 'none';
     saleTextEl.value = ''; // screenshot and pasted text are mutually exclusive
     refreshSaleSubmit();
@@ -465,7 +465,7 @@ function resetSaleModal() {
   saleFileInput.value = '';
   salePreviewWrapEl.classList.remove('show');
   salePreviewEl.src = '';
-  saleFileBtnEl.textContent = 'Tap to upload screenshot';
+  saleFileBtnEl.style.display = '';
   salePasteSectionEl.style.display = '';
   saleTextEl.value = '';
   saleNotesEl.value = '';
@@ -487,7 +487,7 @@ bindTap(saleRemoveShotEl, function() {
   saleFileInput.value = '';
   salePreviewWrapEl.classList.remove('show');
   salePreviewEl.src = '';
-  saleFileBtnEl.textContent = 'Tap to upload screenshot';
+  saleFileBtnEl.style.display = '';
   salePasteSectionEl.style.display = '';
   refreshSaleSubmit();
 }, true);
