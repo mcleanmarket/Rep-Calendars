@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- v52 -->
+  <!-- v53 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -141,6 +141,10 @@
     .acct-filters { display: flex; gap: 6px; padding: 8px 12px; flex-wrap: wrap; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
     .af-btn { padding: 3px 10px; border: 1.5px solid var(--g200); border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g500); transition: all 0.12s; white-space: nowrap; }
     .af-btn.on { background: var(--black); border-color: var(--black); color: #fff; }
+    .acct-search-row { padding: 8px 12px; border-bottom: 1px solid var(--g100); flex-shrink: 0; }
+    .acct-search { width: 100%; padding: 8px 12px; border: 1.5px solid var(--g200); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g700); }
+    .acct-search::placeholder { color: var(--g300); }
+    .acct-search:focus { outline: none; border-color: var(--orange); }
     .sheet-wrap { overflow-x: auto; }
     .sheet-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 11px; }
     .sheet-table thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g500); padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--g100); position: sticky; top: 0; background: #fff; white-space: nowrap; }
@@ -236,6 +240,8 @@
     body.dark .plan-table td:last-child { color: #f0f0f0; }
     body.dark .af-btn { background: #222; border-color: #333; color: #888; }
     body.dark .af-btn.on { background: #f0f0f0; border-color: #f0f0f0; color: #111; }
+    body.dark .acct-search { background: #222; border-color: #333; color: #eee; }
+    body.dark .acct-search-row { border-bottom-color: #2a2a2a; }
     body.dark .sheet-table thead th { background: #1a1a1a; border-bottom-color: #2a2a2a; }
     body.dark .sheet-table tbody tr { border-bottom-color: #2a2a2a; }
     body.dark .sheet-table tbody tr:hover { background: #222; }
@@ -340,6 +346,9 @@
       <button class="af-btn"    id="af-failed"     onclick="setAcctFilter('Failed')">Failed</button>
       <button class="af-btn"    id="af-mia"        onclick="setAcctFilter('M.I.A.')">M.I.A.</button>
       <button class="af-btn"    id="af-followup"   onclick="setAcctFilter('Follow Up')">Follow Up</button>
+    </div>
+    <div id="acct-search-row" class="acct-search-row" style="display:none;">
+      <input id="acct-search" class="acct-search" type="text" placeholder="Search name, phone, address, notes…" oninput="setAcctSearch(this.value)">
     </div>
     <div id="payroll-filters" class="acct-filters" style="display:none;">
       <button class="af-btn on" id="pf-all"    onclick="setPayrollFilter('all')">All</button>
@@ -658,6 +667,7 @@ document.querySelectorAll('.overlay').forEach(function(el){
 var _drawerView = 'dashboard';
 var _acctFilter = ['all']; // array of selected statuses, or ['all']
 var _payrollFilter = 'all';
+var _acctSearch = '';
 
 function openDrawer() {
   document.getElementById('drawerOverlay').classList.add('open');
@@ -673,6 +683,7 @@ function setDrawerView(v) {
   document.getElementById('tab-payroll').classList.toggle('on', v==='payroll');
   document.getElementById('tab-referrals').classList.toggle('on', v==='referrals');
   document.getElementById('acct-filters').style.display = v==='accounts' ? 'flex' : 'none';
+  document.getElementById('acct-search-row').style.display = v==='accounts' ? 'block' : 'none';
   document.getElementById('payroll-filters').style.display = v==='payroll' ? 'flex' : 'none';
   renderDrawer();
 }
@@ -693,6 +704,10 @@ function setAcctFilter(f) {
     if (btn) btn.classList.toggle('on', _acctFilter.indexOf(k) > -1);
   });
   renderDrawer();
+}
+function setAcctSearch(q) {
+  _acctSearch = (q || '').toLowerCase().trim();
+  renderAccounts();
 }
 function setPayrollFilter(f) {
   _payrollFilter = f;
@@ -826,6 +841,13 @@ function renderAccounts() {
     return (parseDate(b['Date Sold'])||new Date(0))-(parseDate(a['Date Sold'])||new Date(0));
   });
   var shown = (_acctFilter.indexOf('all')>-1) ? sorted : sorted.filter(function(r){ return _acctFilter.indexOf(r['Status']||'') > -1; });
+  if (_acctSearch) {
+    shown = shown.filter(function(r){
+      var hay = [r['Customer Name'],r['Phone'],r['Email'],r['Address'],r['Acc ID'],r['Plan'],r['Status'],r['Notes']]
+        .map(function(x){ return x==null ? '' : (''+x); }).join(' ').toLowerCase();
+      return hay.indexOf(_acctSearch) > -1;
+    });
+  }
   if (!shown.length) { body.innerHTML='<div class="drawer-empty">No accounts.</div>'; return; }
   var isFollowUp = _acctFilter.length === 1 && _acctFilter[0] === 'Follow Up';
   var rows = shown.map(function(r){
