@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v33 -->
+  <!-- counter-v34 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -104,7 +104,10 @@
     .sale-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #f5f5f5; margin-bottom: 6px; }
     .sale-textarea::placeholder { color: #555; }
     .sale-file-btn { display: block; width: 100%; padding: 14px; text-align: center; background: #141414; border: 1px dashed #333; border-radius: 10px; color: #999; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; -webkit-tap-highlight-color: transparent; }
-    .sale-preview { width: 100%; border-radius: 10px; margin-bottom: 14px; display: none; border: 1px solid #2a2a2a; }
+    .sale-preview-wrap { position: relative; display: none; margin-bottom: 14px; }
+    .sale-preview-wrap.show { display: block; }
+    .sale-preview { width: 100%; border-radius: 10px; display: block; border: 1px solid #2a2a2a; }
+    .sale-remove-x { position: absolute; top: 8px; left: 8px; width: 30px; height: 30px; border-radius: 50%; background: #ef4444; color: #fff; border: 2px solid #1a1a1a; font-size: 18px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: manipulation; padding: 0; }
     .sale-or { text-align: center; font-size: 11px; color: #999; font-weight: 800; letter-spacing: .1em; margin: 10px 0 16px; }
     .sale-textarea { width: 100%; min-height: 90px; background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; color: #f0f0f0; font-size: 16px; font-family: 'DM Sans', sans-serif; padding: 10px; margin-bottom: 14px; resize: vertical; }
     .sale-submit { width: 100%; padding: 14px; border: none; border-radius: 10px; background: #4ade80; color: #0a2412; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; scroll-margin-bottom: 16px; }
@@ -184,8 +187,10 @@
     <div class="sale-label">Screenshot &mdash; Full Order</div>
     <label class="sale-file-btn" id="saleFileBtn">Tap to upload screenshot</label>
     <input type="file" id="saleFile" accept="image/*" style="display:none;">
-    <img id="salePreview" class="sale-preview" alt="Screenshot preview">
-    <span class="warn-cancel" id="saleRemoveShot" style="display:none; text-align:center; margin:-6px 0 14px;">Remove screenshot</span>
+    <div class="sale-preview-wrap" id="salePreviewWrap">
+      <img id="salePreview" class="sale-preview" alt="Screenshot preview">
+      <button type="button" class="sale-remove-x" id="saleRemoveShot">&times;</button>
+    </div>
 
     <div id="salePasteSection">
       <div class="sale-or">&mdash; OR &mdash;</div>
@@ -395,6 +400,7 @@ bindTap(document.getElementById('sub-sales'), function() { decrement('sales'); }
 var saleFileBtnEl = document.getElementById('saleFileBtn');
 var saleFileInput = document.getElementById('saleFile');
 var salePreviewEl = document.getElementById('salePreview');
+var salePreviewWrapEl = document.getElementById('salePreviewWrap');
 var saleTextEl    = document.getElementById('saleText');
 var saleNotesEl   = document.getElementById('saleNotes');
 var saleSubmitBtn = document.getElementById('saleSubmit');
@@ -412,11 +418,10 @@ saleFileInput.addEventListener('change', function(e) {
   downscaleImage(f, 1400, function(blob, url) {
     saleBlob = blob;
     salePreviewEl.src = url;
-    salePreviewEl.style.display = 'block';
+    salePreviewWrapEl.classList.add('show');
     saleFileBtnEl.textContent = 'Screenshot selected \u2014 tap to change';
     salePasteSectionEl.style.display = 'none';
     saleTextEl.value = ''; // screenshot and pasted text are mutually exclusive
-    saleRemoveShotEl.style.display = 'block';
     refreshSaleSubmit();
     salePreviewEl.onload = function() {
       requestAnimationFrame(function() {
@@ -455,10 +460,9 @@ function openSaleModal() {
 function resetSaleModal() {
   saleBlob = null;
   saleFileInput.value = '';
-  salePreviewEl.style.display = 'none';
+  salePreviewWrapEl.classList.remove('show');
   salePreviewEl.src = '';
   saleFileBtnEl.textContent = 'Tap to upload screenshot';
-  saleRemoveShotEl.style.display = 'none';
   salePasteSectionEl.style.display = '';
   saleTextEl.value = '';
   saleNotesEl.value = '';
@@ -478,13 +482,12 @@ bindTap(document.getElementById('saleCancel'), function() { closeSaleModal(); })
 bindTap(saleRemoveShotEl, function() {
   saleBlob = null;
   saleFileInput.value = '';
-  salePreviewEl.style.display = 'none';
+  salePreviewWrapEl.classList.remove('show');
   salePreviewEl.src = '';
   saleFileBtnEl.textContent = 'Tap to upload screenshot';
-  saleRemoveShotEl.style.display = 'none';
   salePasteSectionEl.style.display = '';
   refreshSaleSubmit();
-});
+}, true);
 
 function submitSale() {
   if (saleSubmitBtn.disabled) return;
