@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v24 -->
+  <!-- counter-v26 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -96,6 +96,21 @@
     .warn-confirm { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #F5A31A; color: #241900; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; touch-action: manipulation; }
     .warn-cancel { display: block; margin-top: 12px; font-size: 12px; color: #666; cursor: pointer; }
 
+    /* Sale capture modal (submit-required, no cancel) */
+    .overlaySale { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 850; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .overlaySale.open { display: flex; }
+    .sale-box { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 20px 18px; width: 340px; max-width: 100%; max-height: 92vh; overflow-y: auto; }
+    .sale-warn { background: #2e1400; border: 1px solid #F5A31A; color: #F5A31A; font-size: 12.5px; font-weight: 800; text-align: center; padding: 11px 12px; border-radius: 10px; margin-bottom: 16px; line-height: 1.4; }
+    .sale-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888; margin-bottom: 6px; }
+    .sale-file-btn { display: block; width: 100%; padding: 14px; text-align: center; background: #141414; border: 1px dashed #333; border-radius: 10px; color: #999; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; -webkit-tap-highlight-color: transparent; }
+    .sale-preview { width: 100%; border-radius: 10px; margin-bottom: 14px; display: none; border: 1px solid #2a2a2a; }
+    .sale-or { text-align: center; font-size: 10px; color: #444; font-weight: 700; letter-spacing: .1em; margin: 4px 0 12px; }
+    .sale-textarea { width: 100%; min-height: 90px; background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; color: #f0f0f0; font-size: 13px; font-family: 'DM Sans', sans-serif; padding: 10px; margin-bottom: 14px; resize: vertical; }
+    .sale-submit { width: 100%; padding: 14px; border: none; border-radius: 10px; background: #4ade80; color: #0a2412; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; }
+    .sale-submit:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
+    .sale-status { text-align: center; font-size: 12px; color: #999; margin-top: 10px; min-height: 16px; }
+    .sale-status.err { color: #ef4444; font-weight: 700; }
+
     /* Toast */
     .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(20px); background: #fff; color: #111; padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; z-index: 900; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -160,10 +175,34 @@
   </div>
 </div>
 
+<!-- Sale capture: must submit (photo or pasted text) to close. No cancel. -->
+<div class="overlaySale" id="overlaySale">
+  <div class="sale-box">
+    <div class="sale-warn">&#128680; MAKE SURE THE INSTALL DATE IS INCLUDED IN THE SCREENSHOT &#128680;</div>
+
+    <div class="sale-label">Order screenshot</div>
+    <label class="sale-file-btn" id="saleFileBtn">Tap to upload screenshot</label>
+    <input type="file" id="saleFile" accept="image/*" style="display:none;">
+    <img id="salePreview" class="sale-preview" alt="Screenshot preview">
+
+    <div class="sale-or">&mdash; OR &mdash;</div>
+
+    <div class="sale-label">Paste order text</div>
+    <textarea class="sale-textarea" id="saleText" placeholder="Paste the full order info here"></textarea>
+
+    <div class="sale-label">Notes (optional)</div>
+    <textarea class="sale-textarea" id="saleNotes" style="min-height:60px;" placeholder="Anything worth flagging"></textarea>
+
+    <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
+    <div class="sale-status" id="saleStatus"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script>
 var REPS   = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
 var ORDER  = ['logan','brycen','sami','connor','jacob'];
@@ -207,7 +246,8 @@ firebase.initializeApp({
   messagingSenderId: "356161676852",
   appId:             "1:356161676852:web:d5591aad4c99f06a088c61"
 });
-var db = firebase.database();
+var db      = firebase.database();
+var storage = firebase.storage();
 
 var _local = { doors:0, engaged:0, sales:0 };
 var _data  = {};
@@ -337,10 +377,130 @@ function bindTap(el, fn, stop) {
   el.addEventListener('touchend', function(e) { if (stop) e.stopPropagation(); e.preventDefault(); last = Date.now(); fn(); }, { passive: false });
   el.addEventListener('click', function(e) { if (stop) e.stopPropagation(); if (Date.now() - last < 700) return; fn(); });
 }
-['doors','engaged','sales'].forEach(function(fld) {
+['doors','engaged'].forEach(function(fld) {
   bindTap(document.getElementById('row-' + fld), function() { increment(fld); });
   bindTap(document.getElementById('sub-' + fld), function() { decrement(fld); }, true);
 });
+// Sales row opens the capture modal instead of incrementing directly.
+// Counter only goes up once a screenshot/text is successfully submitted.
+bindTap(document.getElementById('row-sales'), function() { openSaleModal(); });
+bindTap(document.getElementById('sub-sales'), function() { decrement('sales'); }, true);
+
+/* ── Sale capture modal ──────────────────────────────────── */
+var saleFileBtnEl = document.getElementById('saleFileBtn');
+var saleFileInput = document.getElementById('saleFile');
+var salePreviewEl = document.getElementById('salePreview');
+var saleTextEl    = document.getElementById('saleText');
+var saleNotesEl   = document.getElementById('saleNotes');
+var saleSubmitBtn = document.getElementById('saleSubmit');
+var saleStatusEl  = document.getElementById('saleStatus');
+var overlaySaleEl = document.getElementById('overlaySale');
+var saleBlob = null;
+
+bindTap(saleFileBtnEl, function() { saleFileInput.click(); });
+
+saleFileInput.addEventListener('change', function(e) {
+  var f = e.target.files[0];
+  if (!f) return;
+  downscaleImage(f, 1400, function(blob, url) {
+    saleBlob = blob;
+    salePreviewEl.src = url;
+    salePreviewEl.style.display = 'block';
+    saleFileBtnEl.textContent = 'Screenshot selected \u2014 tap to change';
+    refreshSaleSubmit();
+  });
+});
+
+saleTextEl.addEventListener('input', refreshSaleSubmit);
+
+function refreshSaleSubmit() {
+  var hasText = saleTextEl.value.trim().length > 0;
+  saleSubmitBtn.disabled = !(saleBlob || hasText);
+}
+
+function downscaleImage(file, maxDim, cb) {
+  var img = new Image();
+  img.onload = function() {
+    var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    var c = document.createElement('canvas');
+    c.width  = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(function(blob) {
+      cb(blob, URL.createObjectURL(blob));
+    }, 'image/jpeg', 0.85);
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+function openSaleModal() {
+  overlaySaleEl.classList.add('open');
+}
+
+function resetSaleModal() {
+  saleBlob = null;
+  saleFileInput.value = '';
+  salePreviewEl.style.display = 'none';
+  salePreviewEl.src = '';
+  saleFileBtnEl.textContent = 'Tap to upload screenshot';
+  saleTextEl.value = '';
+  saleNotesEl.value = '';
+  saleStatusEl.textContent = '';
+  saleStatusEl.className = 'sale-status';
+  saleSubmitBtn.disabled = true;
+  saleSubmitBtn.textContent = 'Submit Sale';
+}
+
+function closeSaleModal() {
+  overlaySaleEl.classList.remove('open');
+  resetSaleModal();
+}
+
+bindTap(saleSubmitBtn, function() { submitSale(); });
+
+function submitSale() {
+  if (saleSubmitBtn.disabled) return;
+  saleSubmitBtn.disabled = true;
+  saleSubmitBtn.textContent = 'Submitting\u2026';
+  saleStatusEl.className = 'sale-status';
+  saleStatusEl.textContent = 'Uploading\u2026';
+
+  var textVal  = saleTextEl.value.trim();
+  var notesVal = saleNotesEl.value.trim();
+
+  if (saleBlob) {
+    var path = 'salesLog/' + todayKey() + '/' + slug + '/' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.jpg';
+    var ref = storage.ref(path);
+    ref.put(saleBlob).then(function(snap) {
+      return snap.ref.getDownloadURL();
+    }).then(function(url) {
+      writeSaleLog({ type: 'photo', url: url, text: textVal || null, notes: notesVal || null });
+    }).catch(function(err) {
+      saleFail('Upload failed \u2014 try again');
+    });
+  } else {
+    writeSaleLog({ type: 'text', text: textVal, notes: notesVal || null });
+  }
+}
+
+function writeSaleLog(payload) {
+  payload.ts  = Date.now();
+  payload.rep = REPS[slug];
+  db.ref('salesLog/' + todayKey() + '/' + slug).push(payload).then(function() {
+    increment('sales');
+    closeSaleModal();
+    toast('Sale logged');
+  }).catch(function(err) {
+    saleFail('Save failed \u2014 try again');
+  });
+}
+
+function saleFail(msg) {
+  saleStatusEl.textContent = msg;
+  saleStatusEl.className = 'sale-status err';
+  saleSubmitBtn.disabled = false;
+  saleSubmitBtn.textContent = 'Try Again';
+}
 
 /* ── Promo codes ─────────────────────────────────────────── */
 var CODES = { '20': 'BORRJWUI', '30': 'FBWXFIIO', '40': 'XLSCAQPQ' };
