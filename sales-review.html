@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v4 -->
+<!-- sales-review-v5 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -362,20 +362,22 @@ document.getElementById('processDay').addEventListener('click', function(){
     statusEl.className = 'process-status';
     var job = jobs[i];
     extractEntry(job.entry).then(function(fields){
-      _lastResults.push(buildRow(day, job.rep, job.entry, fields, false));
+      _lastResults.push(buildRow(day, job.rep, job.entry, fields, false, null));
       runNext(i+1);
     }).catch(function(err){
-      _lastResults.push(buildRow(day, job.rep, job.entry, {}, true));
+      console.error('Extraction failed for entry', job.entry._id, err);
+      _lastResults.push(buildRow(day, job.rep, job.entry, {}, true, err.message || String(err)));
       runNext(i+1);
     });
   }
   runNext(0);
 });
 
-function buildRow(day, repSlug, entry, fields, flagged){
+function buildRow(day, repSlug, entry, fields, flagged, errMsg){
   var status = fields.install_date ? 'Scheduled' : 'Pending';
   return {
     flagged: flagged,
+    errMsg: errMsg || '',
     dateSold: day,
     repName: REPS[repSlug],
     accId: fields.account_number || '',
@@ -399,10 +401,14 @@ function renderResultsTable(){
     + heads.map(function(h){ return '<th>' + h + '</th>'; }).join('')
     + '</tr></thead><tbody>'
     + _lastResults.map(function(row){
-        return '<tr>' + cols.map(function(c){
+        var rowHtml = '<tr>' + cols.map(function(c){
           var cls = (c === 'status') ? ' class="status-' + row[c] + '"' : (row.flagged ? ' class="flag"' : '');
           return '<td' + cls + '>' + escapeHtml(row[c]) + '</td>';
         }).join('') + '</tr>';
+        if (row.flagged && row.errMsg){
+          rowHtml += '<tr><td colspan="' + cols.length + '" style="color:#f87171; font-style:italic; font-size:10.5px; white-space:normal;">Error: ' + escapeHtml(row.errMsg) + '</td></tr>';
+        }
+        return rowHtml;
       }).join('')
     + '</tbody></table></div>'
     + '<button class="btn primary" id="copyRows" style="margin-top:12px;">Copy as spreadsheet rows</button>';
