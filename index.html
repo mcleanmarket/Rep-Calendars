@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- v55 -->
+  <!-- v56 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -118,7 +118,7 @@
     .drawer-tabs { display: flex; gap: 6px; }
     .dtab { padding: 5px 14px; border: 1.5px solid var(--g200); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; background: #fff; color: var(--g700); transition: all 0.12s; }
     .dtab.on { background: var(--black); border-color: var(--black); color: #fff; }
-    .drawer-body { overflow-y: auto; flex: 1; }
+    .drawer-body { overflow-y: auto; flex: 1; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     /* Dashboard */
     .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
     .dash-card { background: var(--g50); border-radius: 10px; padding: 14px 16px; }
@@ -669,12 +669,25 @@ var _acctFilter = ['all']; // array of selected statuses, or ['all']
 var _payrollFilter = 'all';
 var _acctSearch = '';
 
+var _drawerScrollY = 0;
 function openDrawer() {
+  _drawerScrollY = window.scrollY || window.pageYOffset || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = (-_drawerScrollY) + 'px';
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
   document.getElementById('drawerOverlay').classList.add('open');
   renderDrawer();
 }
 function closeDrawer() {
   document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, _drawerScrollY);
 }
 function setDrawerView(v) {
   _drawerView = v;
