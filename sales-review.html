@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v1 -->
+<!-- sales-review-v2 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -29,6 +29,7 @@
   .thumb{width:100%;max-width:260px;border-radius:8px;border:1px solid #2a2a2a;display:block;margin-bottom:8px;cursor:pointer}
   .txt-block{background:#0e0e0e;border:1px solid #232323;border-radius:8px;padding:10px;font-size:12.5px;line-height:1.5;color:#ccc;white-space:pre-wrap;max-height:160px;overflow-y:auto;margin-bottom:8px}
   .item-actions{display:flex;gap:8px}
+  .notes-block{font-size:12px;color:#999;font-style:italic;padding:8px 10px;border-left:2px solid #333;margin-bottom:8px}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#fff;color:#111;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:900}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -115,13 +116,15 @@ function render(){
       if (e.type === 'photo' && e.url){
         body += '<img class="thumb" src="' + e.url + '" onclick="window.open(\'' + e.url + '\',\'_blank\')">';
         if (e.text) body += '<div class="txt-block">' + escapeHtml(e.text) + '</div>';
+        if (e.notes) body += '<div class="notes-block">Note: ' + escapeHtml(e.notes) + '</div>';
         body += '<div class="item-actions">'
               + '<button class="btn" onclick="copyImage(\'' + e.url + '\', this)">Copy image</button>'
               + '<button class="btn" onclick="window.open(\'' + e.url + '\',\'_blank\')">Open full size</button>'
               + '</div>';
       } else {
-        body += '<div class="txt-block">' + escapeHtml(e.text || '') + '</div>'
-              + '<div class="item-actions"><button class="btn" onclick="copyText(this)" data-text="' + attrEscape(e.text||'') + '">Copy text</button></div>';
+        body += '<div class="txt-block">' + escapeHtml(e.text || '') + '</div>';
+        if (e.notes) body += '<div class="notes-block">Note: ' + escapeHtml(e.notes) + '</div>';
+        body += '<div class="item-actions"><button class="btn" onclick="copyText(this)" data-text="' + attrEscape(e.text||'') + '">Copy text</button></div>';
       }
       return '<div class="item"><div class="item-top"><span class="item-time">' + time + '</span></div>' + body + '</div>';
     }).join('');
@@ -169,9 +172,15 @@ document.getElementById('copyAllText').addEventListener('click', function(){
     Object.keys(_currentData[s]).forEach(function(id){
       var e = _currentData[s][id];
       if (e.type === 'text' && e.text){
-        out.push('--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ') ---\n' + e.text);
+        var block = '--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ') ---\n' + e.text;
+        if (e.notes) block += '\n[Note: ' + e.notes + ']';
+        out.push(block);
       } else if (e.type === 'photo' && e.text){
-        out.push('--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ', attached to screenshot) ---\n' + e.text);
+        var block2 = '--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ', attached to screenshot) ---\n' + e.text;
+        if (e.notes) block2 += '\n[Note: ' + e.notes + ']';
+        out.push(block2);
+      } else if (e.type === 'photo' && e.notes){
+        out.push('--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ', screenshot only) ---\n[Note: ' + e.notes + ']');
       }
     });
   });
