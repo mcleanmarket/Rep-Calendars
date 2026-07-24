@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v3 -->
+<!-- sales-review-v4 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -43,6 +43,8 @@
   .results-scroll{overflow-x:auto}
   .status-Scheduled{color:#4ade80}
   .status-Pending{color:#f5a31a}
+  .btn.danger{background:#2e0e0e;border-color:#5a1a1a;color:#f87171}
+  .btn.danger:active{background:#3a1212}
 </style>
 </head>
 <body>
@@ -71,6 +73,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script>
 var REPS = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
 var ORDER = ['logan','brycen','sami','connor','jacob'];
@@ -85,6 +88,7 @@ firebase.initializeApp({
   appId:             "1:356161676852:web:d5591aad4c99f06a088c61"
 });
 var db = firebase.database();
+var storage = firebase.storage();
 
 function pad(n){ return n < 10 ? '0'+n : ''+n; }
 function todayStr(){
@@ -143,11 +147,15 @@ function render(){
         body += '<div class="item-actions">'
               + '<button class="btn" onclick="copyImage(\'' + e.url + '\', this)">Copy image</button>'
               + '<button class="btn" onclick="window.open(\'' + e.url + '\',\'_blank\')">Open full size</button>'
+              + '<button class="btn danger" onclick="deleteEntry(\'' + s + '\',\'' + e._id + '\')">Delete</button>'
               + '</div>';
       } else {
         body += '<div class="txt-block">' + escapeHtml(e.text || '') + '</div>';
         if (e.notes) body += '<div class="notes-block">Note: ' + escapeHtml(e.notes) + '</div>';
-        body += '<div class="item-actions"><button class="btn" onclick="copyText(this)" data-text="' + attrEscape(e.text||'') + '">Copy text</button></div>';
+        body += '<div class="item-actions">'
+              + '<button class="btn" onclick="copyText(this)" data-text="' + attrEscape(e.text||'') + '">Copy text</button>'
+              + '<button class="btn danger" onclick="deleteEntry(\'' + s + '\',\'' + e._id + '\')">Delete</button>'
+              + '</div>';
       }
       return '<div class="item"><div class="item-top"><span class="item-time">' + time + '</span></div>' + body + '</div>';
     }).join('');
@@ -159,6 +167,36 @@ function render(){
   }).join('');
 }
 
+function deleteEntry(repSlug, id){
+  var entry = _currentData[repSlug] && _currentData[repSlug][id];
+  if (!entry) return;
+
+  var ok = confirm('Delete this entry? This cannot be undone.');
+  if (!ok) return;
+
+  var day = dayPicker.value;
+
+  var removeStorage = Promise.resolve();
+  if (entry.type === 'photo' && entry.url){
+    try {
+      removeStorage = storage.refFromURL(entry.url).delete().catch(function(){ /* file may already be gone \u2014 don't block the row delete */ });
+    } catch(e) { removeStorage = Promise.resolve(); }
+  }
+
+  removeStorage.then(function(){
+    return db.ref('salesLog/' + day + '/' + repSlug + '/' + id).remove();
+  }).then(function(){
+    // Keep the Sales counter in sync with the actual logged entries
+    return db.ref('counters/' + day + '/' + repSlug + '/sales').transaction(function(v){
+      return Math.max(0, (v || 0) - 1);
+    });
+  }).then(function(){
+    toast('Deleted');
+    loadDay(day);
+  }).catch(function(err){
+    toast('Delete failed \u2014 try again');
+  });
+}
 function escapeHtml(s){
   return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
 }
