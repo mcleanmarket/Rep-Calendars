@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v29 -->
+  <!-- counter-v30 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -105,7 +105,7 @@
     .sale-textarea::placeholder { color: #555; }
     .sale-file-btn { display: block; width: 100%; padding: 14px; text-align: center; background: #141414; border: 1px dashed #333; border-radius: 10px; color: #999; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; -webkit-tap-highlight-color: transparent; }
     .sale-preview { width: 100%; border-radius: 10px; margin-bottom: 14px; display: none; border: 1px solid #2a2a2a; }
-    .sale-or { text-align: center; font-size: 10px; color: #444; font-weight: 700; letter-spacing: .1em; margin: 4px 0 12px; }
+    .sale-or { text-align: center; font-size: 20px; color: #888; font-weight: 800; letter-spacing: .1em; margin: 10px 0 16px; }
     .sale-textarea { width: 100%; min-height: 90px; background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; color: #f0f0f0; font-size: 16px; font-family: 'DM Sans', sans-serif; padding: 10px; margin-bottom: 14px; resize: vertical; }
     .sale-submit { width: 100%; padding: 14px; border: none; border-radius: 10px; background: #4ade80; color: #0a2412; font-size: 14px; font-weight: 800; cursor: pointer; touch-action: manipulation; }
     .sale-submit:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
@@ -191,7 +191,7 @@
     <div class="sale-label">Paste &mdash; Full Order</div>
     <textarea class="sale-textarea" id="saleText" placeholder="Paste full order here"></textarea>
 
-    <div class="sale-label">Notes</div>
+    <div class="sale-label">Notes <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
     <textarea class="sale-textarea" id="saleNotes" style="min-height:60px;" placeholder="Anything worth flagging"></textarea>
 
     <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
@@ -410,6 +410,9 @@ saleFileInput.addEventListener('change', function(e) {
     salePreviewEl.style.display = 'block';
     saleFileBtnEl.textContent = 'Screenshot selected \u2014 tap to change';
     refreshSaleSubmit();
+    setTimeout(function() {
+      saleSubmitBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 120);
   });
 });
 
