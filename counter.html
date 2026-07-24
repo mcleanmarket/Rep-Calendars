@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v27 -->
+  <!-- counter-v28 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -195,6 +195,7 @@
 
     <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
     <div class="sale-status" id="saleStatus"></div>
+    <span class="warn-cancel" id="saleCancel" style="display:block; text-align:center; margin-top:14px;">Cancel</span>
   </div>
 </div>
 
@@ -457,6 +458,7 @@ function closeSaleModal() {
 }
 
 bindTap(saleSubmitBtn, function() { submitSale(); });
+bindTap(document.getElementById('saleCancel'), function() { closeSaleModal(); });
 
 function submitSale() {
   if (saleSubmitBtn.disabled) return;
