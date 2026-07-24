@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v34 -->
+  <!-- counter-v35 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -99,7 +99,7 @@
     /* Sale capture modal (submit-required, no cancel) */
     .overlaySale { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 850; display: none; align-items: center; justify-content: center; padding: 16px; }
     .overlaySale.open { display: flex; }
-    .sale-box { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 20px 18px; width: 340px; max-width: 100%; max-height: 92vh; overflow-y: auto; }
+    .sale-box { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 20px 18px 28px; width: 340px; max-width: 100%; max-height: 88dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     .sale-warn { background: #2e1400; border: 1px solid #F5A31A; color: #F5A31A; font-size: 12.5px; font-weight: 800; text-align: center; padding: 11px 12px; border-radius: 10px; margin-bottom: 16px; line-height: 1.4; }
     .sale-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #f5f5f5; margin-bottom: 6px; }
     .sale-textarea::placeholder { color: #555; }
@@ -425,7 +425,10 @@ saleFileInput.addEventListener('change', function(e) {
     refreshSaleSubmit();
     salePreviewEl.onload = function() {
       requestAnimationFrame(function() {
-        saleSubmitBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        requestAnimationFrame(function() {
+          var box = overlaySaleEl.querySelector('.sale-box');
+          box.scrollTop = box.scrollHeight;
+        });
       });
     };
   });
