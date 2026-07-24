@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v2 -->
+<!-- sales-review-v3 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -32,6 +32,17 @@
   .notes-block{font-size:12px;color:#999;font-style:italic;padding:8px 10px;border-left:2px solid #333;margin-bottom:8px}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#fff;color:#111;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:900}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  input[type=password]{background:#1a1a1a;border:1px solid #2a2a2a;color:#f0f0f0;border-radius:8px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:13px;width:180px}
+  .process-panel{background:#161616;border:1px solid #262626;border-radius:12px;padding:14px;margin-bottom:22px}
+  .process-status{font-size:12.5px;color:#999;margin-top:10px;min-height:16px}
+  .process-status.err{color:#ef4444}
+  .results-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:12px}
+  .results-table th{background:#0e0e0e;color:#888;text-align:left;padding:7px 8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:9.5px;border-bottom:1px solid #262626;white-space:nowrap}
+  .results-table td{padding:7px 8px;border-bottom:1px solid #1e1e1e;color:#ddd;white-space:nowrap}
+  .results-table tr td.flag{color:#f5a31a}
+  .results-scroll{overflow-x:auto}
+  .status-Scheduled{color:#4ade80}
+  .status-Pending{color:#f5a31a}
 </style>
 </head>
 <body>
@@ -39,13 +50,21 @@
 <div class="hdr">
   <h1>Sales Review</h1>
   <div class="hdr-controls">
+    <input type="password" id="apiKey" placeholder="Anthropic API key">
     <input type="date" id="dayPicker">
     <button class="btn primary" id="copyAllText">Copy all text blocks</button>
   </div>
 </div>
 
-<div class="wrap" id="content">
-  <div class="empty">Loading&hellip;</div>
+<div class="wrap">
+  <div class="process-panel">
+    <button class="btn primary" id="processDay" style="width:100%;">Process this day &rarr; spreadsheet rows</button>
+    <div class="process-status" id="processStatus"></div>
+    <div id="resultsWrap"></div>
+  </div>
+  <div id="content">
+    <div class="empty">Loading&hellip;</div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -83,6 +102,10 @@ function fmtTime(ms){
 var dayPicker = document.getElementById('dayPicker');
 dayPicker.value = todayStr();
 dayPicker.addEventListener('change', function(){ loadDay(dayPicker.value); });
+
+var apiKeyEl = document.getElementById('apiKey');
+apiKeyEl.value = localStorage.getItem('ak') || '';
+apiKeyEl.addEventListener('input', function(e){ localStorage.setItem('ak', e.target.value.trim()); });
 
 var _currentData = {}; // rep -> {pushId: entry}
 
@@ -190,6 +213,173 @@ document.getElementById('copyAllText').addEventListener('click', function(){
 });
 
 loadDay(todayStr());
+
+/* ── AI extraction: turn each logged entry into a Master-sheet row ── */
+var MODEL = "claude-haiku-4-5-20251001";
+
+var EXTRACT_SYSTEM = `You read Nextlink Internet order confirmation data \u2014 either a screenshot image or raw text copied from the order portal \u2014 and return structured JSON.
+
+Return ONLY a JSON object. No markdown, no code fences, no commentary.
+
+Keys (use exactly these, all of them, always): "account_number", "customer_name", "phone", "email", "address", "plan_name", "price", "install_date"
+
+Field notes:
+- account_number: the number in the orange "Account #" banner.
+- address: the full service address on one line, exactly as shown.
+- plan_name: the internet plan name only (e.g. "FiberNEXT500", "NEXT500"). Do not include price.
+- price: the bold "MONTHLY TOTAL" figure, number only, no dollar sign.
+- install_date: YYYY-MM-DD if a specific date is shown. If it says "No installation date has been selected" or similar, or no date appears at all, set this to null \u2014 that is a valid, expected state, not an error.
+
+Rules:
+- Copy values verbatim. Do not reformat, expand abbreviations, or infer values not shown.
+- If a field isn't present, set it to null. Never guess.
+- Phone: digits only, no punctuation.
+- If the input isn't a Nextlink order at all, return {"error":"not_an_order"}.`;
+
+function imageUrlToBase64(url){
+  return fetch(url).then(function(r){ return r.blob(); }).then(function(blob){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve({ data: reader.result.split(',')[1], mediaType: blob.type || 'image/jpeg' }); };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  });
+}
+
+function extractEntry(entry){
+  var key = apiKeyEl.value.trim();
+  var content;
+
+  function callApi(contentBlocks){
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 500,
+        system: EXTRACT_SYSTEM,
+        messages: [{ role: 'user', content: contentBlocks }]
+      })
+    }).then(function(r){
+      if (!r.ok) return r.text().then(function(t){ throw new Error('API ' + r.status + ': ' + t.slice(0,150)); });
+      return r.json();
+    }).then(function(data){
+      var text = data.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+      var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      if (parsed.error) throw new Error('not a recognizable order');
+      return parsed;
+    });
+  }
+
+  if (entry.type === 'photo' && entry.url){
+    return imageUrlToBase64(entry.url).then(function(img){
+      return callApi([
+        { type:'image', source:{ type:'base64', media_type: img.mediaType, data: img.data } },
+        { type:'text', text: 'Extract the order details.' + (entry.text ? '\n\nAdditional pasted text from the rep:\n' + entry.text : '') }
+      ]);
+    });
+  } else {
+    return callApi([{ type:'text', text: 'Extract the order details from this pasted text:\n\n' + (entry.text || '') }]);
+  }
+}
+
+var _lastResults = []; // rows in Master-sheet column order
+
+document.getElementById('processDay').addEventListener('click', function(){
+  var key = apiKeyEl.value.trim();
+  var statusEl = document.getElementById('processStatus');
+  var resultsWrap = document.getElementById('resultsWrap');
+  if (!key){ statusEl.textContent = 'Paste your Anthropic API key up top first.'; statusEl.className = 'process-status err'; return; }
+
+  var day = dayPicker.value;
+  var jobs = [];
+  ORDER.forEach(function(s){
+    if (!_currentData[s]) return;
+    Object.keys(_currentData[s]).forEach(function(id){
+      var e = _currentData[s][id];
+      jobs.push({ rep: s, entry: e });
+    });
+  });
+
+  if (!jobs.length){ statusEl.textContent = 'Nothing logged this day.'; statusEl.className = 'process-status'; return; }
+
+  resultsWrap.innerHTML = '';
+  _lastResults = [];
+  var done = 0;
+
+  function runNext(i){
+    if (i >= jobs.length){
+      statusEl.textContent = 'Done \u2014 ' + jobs.length + ' processed.';
+      statusEl.className = 'process-status';
+      renderResultsTable();
+      return;
+    }
+    statusEl.textContent = 'Processing ' + (i+1) + ' of ' + jobs.length + '\u2026';
+    statusEl.className = 'process-status';
+    var job = jobs[i];
+    extractEntry(job.entry).then(function(fields){
+      _lastResults.push(buildRow(day, job.rep, job.entry, fields, false));
+      runNext(i+1);
+    }).catch(function(err){
+      _lastResults.push(buildRow(day, job.rep, job.entry, {}, true));
+      runNext(i+1);
+    });
+  }
+  runNext(0);
+});
+
+function buildRow(day, repSlug, entry, fields, flagged){
+  var status = fields.install_date ? 'Scheduled' : 'Pending';
+  return {
+    flagged: flagged,
+    dateSold: day,
+    repName: REPS[repSlug],
+    accId: fields.account_number || '',
+    phone: fields.phone || '',
+    customerName: fields.customer_name || '',
+    email: fields.email || '',
+    address: fields.address || '',
+    plan: fields.plan_name || '',
+    price: fields.price || '',
+    installDate: fields.install_date || '',
+    notes: entry.notes || '',
+    status: fields.install_date ? 'Scheduled' : (flagged ? 'Needs review' : 'Pending')
+  };
+}
+
+function renderResultsTable(){
+  var cols = ['dateSold','repName','accId','phone','customerName','email','address','plan','price','installDate','notes','status'];
+  var heads = ['Date Sold','Rep Name','Acc ID','Phone','Customer Name','Email','Address','Plan','Price','Install Date','Notes','Status'];
+
+  var html = '<div class="results-scroll"><table class="results-table"><thead><tr>'
+    + heads.map(function(h){ return '<th>' + h + '</th>'; }).join('')
+    + '</tr></thead><tbody>'
+    + _lastResults.map(function(row){
+        return '<tr>' + cols.map(function(c){
+          var cls = (c === 'status') ? ' class="status-' + row[c] + '"' : (row.flagged ? ' class="flag"' : '');
+          return '<td' + cls + '>' + escapeHtml(row[c]) + '</td>';
+        }).join('') + '</tr>';
+      }).join('')
+    + '</tbody></table></div>'
+    + '<button class="btn primary" id="copyRows" style="margin-top:12px;">Copy as spreadsheet rows</button>';
+
+  document.getElementById('resultsWrap').innerHTML = html;
+
+  document.getElementById('copyRows').addEventListener('click', function(){
+    var cols2 = ['dateSold','repName','accId','phone','customerName','email','address','plan','price','installDate','notes','status'];
+    var tsv = _lastResults.map(function(row){
+      return cols2.map(function(c){ return String(row[c]).replace(/\t/g,' ').replace(/\n/g,' '); }).join('\t');
+    }).join('\n');
+    navigator.clipboard.writeText(tsv).then(function(){ toast('Rows copied \u2014 paste into the sheet'); })
+      .catch(function(){ toast('Copy failed'); });
+  });
+}
 </script>
 </body>
 </html>
