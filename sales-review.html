@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v6 -->
+<!-- sales-review-v8 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -45,6 +45,16 @@
   .status-Pending{color:#f5a31a}
   .btn.danger{background:#2e0e0e;border-color:#5a1a1a;color:#f87171}
   .btn.danger:active{background:#3a1212}
+  .synced-panel{background:#0f1a12;border:1px solid #1f3a26;border-radius:12px;padding:14px;margin-bottom:22px}
+  .synced-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .synced-hd h2{font-size:13px;font-weight:800;color:#e0e0e0}
+  .synced-count{font-size:11.5px;color:#7fdba0;font-family:'DM Mono',monospace}
+  .sync-icon{display:inline-block;width:16px;text-align:center}
+  .sync-ok{color:#4ade80}
+  .sync-pending{color:#666}
+  .sync-fail{color:#f87171;cursor:pointer;text-decoration:underline;font-size:10px}
+  .sync-alert{background:#2e0e0e;border:1px solid #7f1d1d;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#fca5a5;line-height:1.5}
+  .sync-alert b{color:#fff}
 </style>
 </head>
 <body>
@@ -58,6 +68,13 @@
 </div>
 
 <div class="wrap">
+  <div class="synced-panel">
+    <div class="synced-hd">
+      <h2>Today's Processed &amp; Synced Sales</h2>
+      <span class="synced-count" id="syncedCount"></span>
+    </div>
+    <div id="syncedWrap"><div class="empty" style="padding:20px 0;">No sales processed yet today.</div></div>
+  </div>
   <div class="process-panel">
     <button class="btn primary" id="processDay" style="width:100%;">Process this day &rarr; spreadsheet rows</button>
     <div class="process-status" id="processStatus"></div>
@@ -88,6 +105,7 @@ firebase.initializeApp({
 });
 var db = firebase.database();
 var storage = firebase.storage();
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBKyT5VkDzEo76FlYPT1mlxjg0gTVUJuxfYr9PDw3isKgPGnssLKLblz3jC4vF1TYuCA/exec';
 
 function pad(n){ return n < 10 ? '0'+n : ''+n; }
 function todayStr(){
@@ -107,13 +125,19 @@ dayPicker.value = todayStr();
 dayPicker.addEventListener('change', function(){ loadDay(dayPicker.value); });
 
 var _currentData = {}; // rep -> {pushId: entry}
+var _currentDay = null;
+var _liveRef = null;
 
 function loadDay(day){
   document.getElementById('content').innerHTML = '<div class="empty">Loading&hellip;</div>';
-  db.ref('salesLog/' + day).once('value').then(function(snap){
+  if (_liveRef) _liveRef.off('value');
+  _currentDay = day;
+  _liveRef = db.ref('salesLog/' + day);
+  _liveRef.on('value', function(snap){
     _currentData = snap.val() || {};
     render();
-  }).catch(function(){
+    renderSyncedPanel();
+  }, function(){
     document.getElementById('content').innerHTML = '<div class="empty">Couldn\'t load that day.</div>';
   });
 }
@@ -192,6 +216,101 @@ function deleteEntry(repSlug, id){
     toast('Delete failed \u2014 try again');
   });
 }
+function renderSyncedPanel(){
+  var cols = ['dateSold','repName','accId','phone','customerName','email','address','plan','price','installDate','notes','status'];
+  var heads = ['','Date Sold','Rep Name','Acc ID','Phone','Customer Name','Email','Address','Plan','Price','Install Date','Notes','Status'];
+
+  var rows = [];
+  ORDER.forEach(function(s){
+    if (!_currentData[s]) return;
+    Object.keys(_currentData[s]).forEach(function(id){
+      var e = _currentData[s][id];
+      if (e.processed) rows.push({ rep: s, id: id, fields: e.processed });
+    });
+  });
+
+  var countEl = document.getElementById('syncedCount');
+  var wrap = document.getElementById('syncedWrap');
+
+  if (!rows.length){
+    countEl.textContent = '';
+    wrap.innerHTML = '<div class="empty" style="padding:20px 0;">No sales processed yet today.</div>';
+    return;
+  }
+
+  rows.sort(function(a,b){ return (a.fields.dateSold||'').localeCompare(b.fields.dateSold||''); });
+  var syncedCt = rows.filter(function(r){ return r.fields.syncedToSheet === true; }).length;
+  var failedRows = rows.filter(function(r){ return r.fields.syncedToSheet === false; });
+  countEl.textContent = syncedCt + ' of ' + rows.length + ' synced to sheet';
+
+  var alertHtml = '';
+  if (failedRows.length){
+    alertHtml = '<div class="sync-alert">'
+      + '<b>\u26a0\ufe0f Sheet sync is failing.</b> ' + failedRows.length + ' sale' + (failedRows.length > 1 ? 's' : '') + ' failed after 3 automatic attempts \u2014 this usually means something\u2019s actually broken (Apps Script down, URL changed, deployment issue), not a one-off fluke. New sales will likely keep failing the same way until it\u2019s fixed. '
+      + '<button class="btn" style="margin-top:8px;" onclick="resyncAllFailed()">Retry all failed</button>'
+      + '</div>';
+  }
+
+  var html = alertHtml + '<div class="results-scroll"><table class="results-table"><thead><tr>'
+    + heads.map(function(h){ return '<th>' + h + '</th>'; }).join('')
+    + '</tr></thead><tbody>'
+    + rows.map(function(r){
+        var f = r.fields;
+        var iconHtml;
+        if (f.syncedToSheet === true){
+          iconHtml = '<span class="sync-icon sync-ok" title="Synced to sheet">\u2713</span>';
+        } else if (f.syncedToSheet === false){
+          iconHtml = '<span class="sync-fail" onclick="resyncEntry(\'' + r.rep + '\',\'' + r.id + '\',this)" title="Tap to retry">retry</span>';
+        } else {
+          iconHtml = '<span class="sync-icon sync-pending" title="Syncing\u2026">\u22ef</span>';
+        }
+        return '<tr><td>' + iconHtml + '</td>' + cols.map(function(c){
+          var cls = (c === 'status') ? ' class="status-' + f[c] + '"' : '';
+          return '<td' + cls + '>' + escapeHtml(f[c] || '') + '</td>';
+        }).join('') + '</tr>';
+      }).join('')
+    + '</tbody></table></div>';
+
+  wrap.innerHTML = html;
+}
+
+function resyncAllFailed(){
+  var day = _currentDay;
+  var jobs = [];
+  ORDER.forEach(function(s){
+    if (!_currentData[s]) return;
+    Object.keys(_currentData[s]).forEach(function(id){
+      var e = _currentData[s][id];
+      if (e.processed && e.processed.syncedToSheet === false) jobs.push({ rep: s, id: id });
+    });
+  });
+  if (!jobs.length) return;
+  toast('Retrying ' + jobs.length + ' sale' + (jobs.length > 1 ? 's' : '') + '\u2026');
+  jobs.forEach(function(j){ resyncEntry(j.rep, j.id, null); });
+}
+
+function resyncEntry(repSlug, id, linkEl){
+  if (linkEl) linkEl.textContent = 'retrying\u2026';
+  var day = _currentDay;
+  db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed').once('value').then(function(snap){
+    var fields = snap.val();
+    if (!fields) throw new Error('no processed data found');
+    return fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ action: 'appendSale', data: fields })
+    }).then(function(r){ return r.json(); }).then(function(res){
+      if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
+      return db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed/syncedToSheet').set(true);
+    });
+  }).then(function(){
+    toast('Synced to sheet');
+  }).catch(function(){
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed/syncedToSheet').set(false);
+    toast('Still failing \u2014 check Apps Script');
+  });
+}
+
 function escapeHtml(s){
   return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
 }
