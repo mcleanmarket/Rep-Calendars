@@ -16,7 +16,7 @@ OUTPUT SHAPE (all keys always present):
 FIELD RULES
 - account_number: the LARGE account number shown in the orange "Account #" banner at the top of the page. Do NOT use the small green customer ID number that appears next to the customer's name near "CUSTOMER INFORMATION" \u2014 that is a different number and must never be used for this field, or output anywhere at all.
 - customer_name: full name as shown.
-- phone: 10 digits, no punctuation. Blank if not shown \u2014 never guess.
+- phone: 10 digits, no punctuation. Blank if not shown \u2014 never guess. Of every field on this page, the phone number matters most \u2014 a single misread digit sends a confirmation text to the wrong person. Read it slowly and deliberately, digit by digit, rather than pattern-matching at a glance. If any digit is even slightly unclear (blur, glare, cropping, low contrast), do not guess it \u2014 leave the whole field blank and use "flag" to say the phone number was unclear, rather than risk one wrong digit going out silently correct-looking.
 - email: as shown, lowercase. Blank if not shown.
 - address: "street, city, ST zip" \u2014 drop any trailing ", USA". Use the 2-letter state abbreviation.
 - plan_raw: the plan name exactly as shown on the page (e.g. "FiberNEXT500", "NEXT200", "Fiber1000"). Copy it verbatim \u2014 do not normalize, expand, or guess it.
