@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v40 -->
+  <!-- counter-v43 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -287,7 +287,7 @@ var db      = firebase.database();
 var storage = firebase.storage();
 
 // Same standardization table as sales-review.html \u2014 keep both in sync if this ever changes
-var STANDARD_PRICES = { 100:30, 200:30, 300:50, 400:50, 500:50, 1000:80 };
+var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 1000:80 };
 var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
 function standardizePlan(rawPlan){
   if (!rawPlan) return { plan:'', price:'' };
@@ -650,6 +650,7 @@ function runExtraction(day, repSlug, entryId, payload){
       speed: std.speed || '',
       price: std.price,
       installDate: parsed.install_date || '',
+      installWindow: parsed.install_window || '',
       notes: (payload.notes || '').trim(),
       status: parsed.install_date ? 'Scheduled' : 'Pending'
     };
@@ -677,35 +678,50 @@ function showReadyView(day, repSlug, entryId, fields){
   saleSendTextBtn.onclick = function(){ sendConfirmationText(fields); };
 }
 
-function formatInstallDateFriendly(iso){
+function formatConfirmDate(iso){
   if (!iso) return null;
   var d = new Date(iso + 'T12:00:00');
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  if (isNaN(d.getTime())) return null;
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function formatWindow(raw){
+  if (!raw) return '';
+  var upper = raw.toUpperCase();
+  // Always normalize to one of exactly two fixed slots \u2014 morning starts with
+  // AM, afternoon starts with PM \u2014 regardless of how the screenshot itself
+  // writes it (e.g. some show "12 PM-5 PM" instead of "1 PM-5 PM").
+  if (upper.indexOf('AM') !== -1) return '8am-12pm';
+  if (upper.indexOf('PM') !== -1) return '1pm-5pm';
+  return raw.replace(/\s+/g, '').toLowerCase(); // fallback for anything unrecognized
 }
 
 function sendConfirmationText(fields){
-  var installLine = fields.installDate
-    ? ('\u2705 Install date: ' + formatInstallDateFriendly(fields.installDate))
-    : '\u2705 Install date: to be scheduled';
+  var dateStr   = formatConfirmDate(fields.installDate);
+  var windowStr = formatWindow(fields.installWindow);
+  var repFirst  = (fields.repName || '').split(' ')[0];
 
-  var priceLine = fields.price ? ('$' + fields.price + ' monthly \u2705') : '';
+  var installLine = dateStr
+    ? ('Install date: ' + dateStr + (windowStr ? ' \u2014 Arrival between ' + windowStr : '') + '  \uD83D\uDEDC')
+    : ('Install date: TBD \u2014 I\u2019ll text you with the exact date  \uD83D\uDEDC');
 
   var lines = [
     installLine,
     '',
-    fields.speed ? ('100% unlimited, ' + fields.speed + ' speed \u26a1') : '',
+    '100% unlimited, ' + (fields.speed || '') + ' mbps speed  \u26A1\uFE0F',
     '',
-    priceLine,
+    '$' + fields.price + ' monthly \u2013 First month free  \u2705',
     '',
     'No contract',
     'Install included',
     'Router included',
     '',
-    'Refer me a Friend \u2014 Get $100 \ud83d\udcb0',
+    'Refer me a Friend \u2013 Get $100  \uD83D\uDCB0',
     '',
-    '\u2014 ' + fields.repName + ', Nextlink Internet'
-  ].filter(function(l){ return l !== null && l !== undefined; });
+    '\u2014 ' + repFirst + ', Nextlink Internet'
+  ];
 
   var body = lines.join('\n');
   var phone = (fields.phone || '').replace(/\D/g,'');
