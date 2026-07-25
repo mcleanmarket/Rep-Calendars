@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v8 -->
+<!-- sales-review-v9 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -106,6 +106,7 @@ firebase.initializeApp({
 var db = firebase.database();
 var storage = firebase.storage();
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBKyT5VkDzEo76FlYPT1mlxjg0gTVUJuxfYr9PDw3isKgPGnssLKLblz3jC4vF1TYuCA/exec';
+var APPEND_SECRET = 'nextlink-motion-9f2k7q'; // must match APPEND_SECRET in Code.gs and counter.html exactly
 
 function pad(n){ return n < 10 ? '0'+n : ''+n; }
 function todayStr(){
@@ -298,7 +299,7 @@ function resyncEntry(repSlug, id, linkEl){
     return fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'content-type': 'text/plain' },
-      body: JSON.stringify({ action: 'appendSale', data: fields })
+      body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: fields })
     }).then(function(r){ return r.json(); }).then(function(res){
       if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
       return db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed/syncedToSheet').set(true);
