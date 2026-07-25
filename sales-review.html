@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v11 -->
+<!-- sales-review-v12 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -67,7 +67,6 @@
   <h1>Sales Review</h1>
   <div class="hdr-controls">
     <input type="date" id="dayPicker">
-    <button class="btn primary" id="copyAllText">Copy all text blocks</button>
   </div>
 </div>
 
@@ -348,31 +347,6 @@ function copyImage(url, btn){
   }).then(function(){ toast('Image copied'); })
   .catch(function(){ toast('Copy failed \u2014 try "Open full size" and save instead'); });
 }
-
-// Gathers every text-type entry across all reps for the current day into one clipboard blob
-document.getElementById('copyAllText').addEventListener('click', function(){
-  var out = [];
-  ORDER.forEach(function(s){
-    if (!_currentData[s]) return;
-    Object.keys(_currentData[s]).forEach(function(id){
-      var e = _currentData[s][id];
-      if (e.type === 'text' && e.text){
-        var block = '--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ') ---\n' + e.text;
-        if (e.notes) block += '\n[Note: ' + e.notes + ']';
-        out.push(block);
-      } else if (e.type === 'photo' && e.text){
-        var block2 = '--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ', attached to screenshot) ---\n' + e.text;
-        if (e.notes) block2 += '\n[Note: ' + e.notes + ']';
-        out.push(block2);
-      } else if (e.type === 'photo' && e.notes){
-        out.push('--- ' + REPS[s] + ' (' + (e.ts ? fmtTime(e.ts) : '') + ', screenshot only) ---\n[Note: ' + e.notes + ']');
-      }
-    });
-  });
-  if (!out.length){ toast('No text blocks this day'); return; }
-  navigator.clipboard.writeText(out.join('\n\n')).then(function(){ toast('All text copied'); })
-    .catch(function(){ toast('Copy failed'); });
-});
 
 loadDay(todayStr());
 
