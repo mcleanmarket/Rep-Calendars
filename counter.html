@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v36 -->
+  <!-- counter-v38 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -115,6 +115,16 @@
     .sale-status { text-align: center; font-size: 12px; color: #999; margin-top: 10px; min-height: 16px; }
     .sale-status.err { color: #ef4444; font-weight: 700; }
 
+    /* Post-submit: processing + ready-to-text states */
+    .sale-spin { width: 26px; height: 26px; border: 3px solid #2a2a2a; border-top-color: #4ade80; border-radius: 50%; margin: 6px auto 16px; animation: saleSpin .8s linear infinite; }
+    @keyframes saleSpin { to { transform: rotate(360deg); } }
+    .sale-proc-text { text-align: center; font-size: 13px; color: #999; }
+    .sale-ready-name { text-align: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+    .sale-ready-sub { text-align: center; font-size: 12px; color: #888; margin-bottom: 18px; font-family: 'DM Mono', monospace; }
+    .sale-text-btn { width: 100%; padding: 15px; border: none; border-radius: 10px; background: #60a5fa; color: #06172e; font-size: 14.5px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
+    .sale-done-btn { width: 100%; padding: 13px; border: 1px solid #2a2a2a; border-radius: 10px; background: #141414; color: #ccc; font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+    .sale-sync-note { text-align: center; font-size: 10.5px; color: #555; margin-top: 12px; font-family: 'DM Mono', monospace; }
+
     /* Toast */
     .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(20px); background: #fff; color: #111; padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; z-index: 900; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -182,29 +192,46 @@
 <!-- Sale capture: must submit (photo or pasted text) to close. No cancel. -->
 <div class="overlaySale" id="overlaySale">
   <div class="sale-box">
-    <div class="sale-warn">&#128680; MAKE SURE THE INSTALL DATE IS INCLUDED IN THE SCREENSHOT &#128680;</div>
 
-    <div class="sale-label">Screenshot &mdash; Full Order</div>
-    <label class="sale-file-btn" id="saleFileBtn">Tap to upload screenshot</label>
-    <input type="file" id="saleFile" accept="image/*" style="display:none;">
-    <div class="sale-preview-wrap" id="salePreviewWrap">
-      <img id="salePreview" class="sale-preview" alt="Screenshot preview">
-      <button type="button" class="sale-remove-x" id="saleRemoveShot">&times;</button>
+    <div id="saleCaptureView">
+      <div class="sale-warn">&#128680; MAKE SURE THE INSTALL DATE IS INCLUDED IN THE SCREENSHOT &#128680;</div>
+
+      <div class="sale-label">Screenshot &mdash; Full Order</div>
+      <label class="sale-file-btn" id="saleFileBtn">Tap to upload screenshot</label>
+      <input type="file" id="saleFile" accept="image/*" style="display:none;">
+      <div class="sale-preview-wrap" id="salePreviewWrap">
+        <img id="salePreview" class="sale-preview" alt="Screenshot preview">
+        <button type="button" class="sale-remove-x" id="saleRemoveShot">&times;</button>
+      </div>
+
+      <div id="salePasteSection">
+        <div class="sale-or">&mdash; OR &mdash;</div>
+
+        <div class="sale-label">Paste &mdash; Full Order</div>
+        <textarea class="sale-textarea" id="saleText" placeholder="Paste full order here"></textarea>
+      </div>
+
+      <div class="sale-label">Notes <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <textarea class="sale-textarea" id="saleNotes" style="min-height:60px;" placeholder="Anything worth flagging"></textarea>
+
+      <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
+      <div class="sale-status" id="saleStatus"></div>
+      <span class="warn-cancel" id="saleCancel" style="display:block; text-align:center; margin-top:14px;">Cancel</span>
     </div>
 
-    <div id="salePasteSection">
-      <div class="sale-or">&mdash; OR &mdash;</div>
-
-      <div class="sale-label">Paste &mdash; Full Order</div>
-      <textarea class="sale-textarea" id="saleText" placeholder="Paste full order here"></textarea>
+    <div id="saleProcessingView" style="display:none;">
+      <div class="sale-spin"></div>
+      <div class="sale-proc-text" id="saleProcText">Reading order details&hellip;</div>
     </div>
 
-    <div class="sale-label">Notes <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
-    <textarea class="sale-textarea" id="saleNotes" style="min-height:60px;" placeholder="Anything worth flagging"></textarea>
+    <div id="saleReadyView" style="display:none;">
+      <div class="sale-ready-name" id="saleReadyName"></div>
+      <div class="sale-ready-sub" id="saleReadySub"></div>
+      <button class="sale-text-btn" id="saleSendText">Send Confirmation Text</button>
+      <button class="sale-done-btn" id="saleDoneBtn">Done</button>
+      <div class="sale-sync-note" id="saleSyncNote">Syncing to sheet&hellip;</div>
+    </div>
 
-    <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
-    <div class="sale-status" id="saleStatus"></div>
-    <span class="warn-cancel" id="saleCancel" style="display:block; text-align:center; margin-top:14px;">Cancel</span>
   </div>
 </div>
 
@@ -258,6 +285,27 @@ firebase.initializeApp({
 });
 var db      = firebase.database();
 var storage = firebase.storage();
+
+// Same standardization table as sales-review.html \u2014 keep both in sync if this ever changes
+var STANDARD_PRICES = { 100:30, 200:30, 300:50, 400:50, 500:50, 1000:80 };
+var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
+function standardizePlan(rawPlan){
+  if (!rawPlan) return { plan:'', price:'' };
+  var speedMatch = rawPlan.match(/(\d{2,4})/);
+  if (!speedMatch) return { plan: rawPlan, price:'' };
+  var speed = parseInt(speedMatch[1], 10);
+  var isNext = /next/i.test(rawPlan);
+  if (isNext){
+    var p1 = STANDARD_PRICES[speed];
+    return { plan: 'NEXT' + speed, price: (p1 != null ? p1 : ''), speed: speed };
+  } else {
+    var p2 = FIBER_PRICES[speed];
+    return { plan: 'Fiber' + speed, price: (p2 != null ? p2 : ''), speed: speed };
+  }
+}
+
+// Your existing deployed Apps Script Web App \u2014 needs a new 'appendSale' action added (see chat)
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBKyT5VkDzEo76FlYPT1mlxjg0gTVUJuxfYr9PDw3isKgPGnssLKLblz3jC4vF1TYuCA/exec';
 
 var _local = { doors:0, engaged:0, sales:0 };
 var _data  = {};
@@ -473,6 +521,9 @@ function resetSaleModal() {
   saleStatusEl.className = 'sale-status';
   saleSubmitBtn.disabled = true;
   saleSubmitBtn.textContent = 'Submit Sale';
+  var retryBtn = saleProcessingViewEl.querySelector('.sale-text-btn');
+  if (retryBtn) retryBtn.remove();
+  showSaleView('capture');
 }
 
 function closeSaleModal() {
@@ -520,10 +571,11 @@ function submitSale() {
 function writeSaleLog(payload) {
   payload.ts  = Date.now();
   payload.rep = REPS[slug];
-  db.ref('salesLog/' + todayKey() + '/' + slug).push(payload).then(function() {
+  var day = todayKey();
+  var ref = db.ref('salesLog/' + day + '/' + slug).push();
+  ref.set(payload).then(function() {
     increment('sales');
-    closeSaleModal();
-    toast('Sale logged');
+    goToProcessing(day, slug, ref.key, payload);
   }).catch(function(err) {
     saleFail('Save failed \u2014 try again');
   });
@@ -535,6 +587,150 @@ function saleFail(msg) {
   saleSubmitBtn.disabled = false;
   saleSubmitBtn.textContent = 'Try Again';
 }
+
+/* ── Post-submit: live extraction, then Send Confirmation Text ───── */
+var saleCaptureViewEl    = document.getElementById('saleCaptureView');
+var saleProcessingViewEl = document.getElementById('saleProcessingView');
+var saleProcTextEl       = document.getElementById('saleProcText');
+var saleReadyViewEl      = document.getElementById('saleReadyView');
+var saleReadyNameEl      = document.getElementById('saleReadyName');
+var saleReadySubEl       = document.getElementById('saleReadySub');
+var saleSendTextBtn      = document.getElementById('saleSendText');
+var saleDoneBtnEl        = document.getElementById('saleDoneBtn');
+var saleSyncNoteEl       = document.getElementById('saleSyncNote');
+
+function showSaleView(name){
+  saleCaptureViewEl.style.display    = (name === 'capture')    ? '' : 'none';
+  saleProcessingViewEl.style.display = (name === 'processing') ? '' : 'none';
+  saleReadyViewEl.style.display      = (name === 'ready')      ? '' : 'none';
+}
+
+function goToProcessing(day, repSlug, entryId, payload){
+  showSaleView('processing');
+  saleProcTextEl.innerHTML = 'Reading order details&hellip;';
+  runExtraction(day, repSlug, entryId, payload);
+}
+
+function runExtraction(day, repSlug, entryId, payload){
+  var contentBlocks;
+  if (payload.type === 'photo' && payload.url){
+    contentBlocks = [
+      { type:'image', source:{ type:'url', url: payload.url } },
+      { type:'text', text: 'Extract the order details.' + (payload.text ? '\n\nAdditional pasted text from the rep:\n' + payload.text : '') }
+    ];
+  } else {
+    contentBlocks = [{ type:'text', text: 'Extract the order details from this pasted text:\n\n' + (payload.text || '') }];
+  }
+
+  fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content: contentBlocks })
+  }).then(function(r){
+    return r.json().then(function(data){
+      if (!r.ok) throw new Error((data && data.error && (data.error.message || data.error)) || ('API ' + r.status));
+      return data;
+    });
+  }).then(function(data){
+    var text = data.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+    var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    if (parsed.error) throw new Error('not a recognizable order');
+
+    var std = standardizePlan(parsed.plan_raw);
+    var fields = {
+      dateSold: day,
+      repName: REPS[repSlug],
+      accId: parsed.account_number || '',
+      phone: parsed.phone || '',
+      customerName: parsed.customer_name || '',
+      email: parsed.email || '',
+      address: parsed.address || '',
+      plan: std.plan,
+      speed: std.speed || '',
+      price: std.price,
+      installDate: parsed.install_date || '',
+      notes: (payload.notes || '').trim(),
+      status: parsed.install_date ? 'Scheduled' : 'Pending'
+    };
+
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields);
+    showReadyView(day, repSlug, entryId, fields);
+    syncToSheet(day, repSlug, entryId, fields, 0);
+  }).catch(function(err){
+    saleProcTextEl.innerHTML = 'Couldn\u2019t read that order.<br><span style="color:#f87171; font-size:11px;">' + (err.message || err) + '</span>';
+    var retryBtn = document.createElement('button');
+    retryBtn.className = 'sale-text-btn';
+    retryBtn.style.marginTop = '16px';
+    retryBtn.textContent = 'Try Again';
+    retryBtn.onclick = function(){ retryBtn.remove(); goToProcessing(day, repSlug, entryId, payload); };
+    saleProcessingViewEl.appendChild(retryBtn);
+  });
+}
+
+function showReadyView(day, repSlug, entryId, fields){
+  showSaleView('ready');
+  saleReadyNameEl.textContent = fields.customerName || '(name not read)';
+  saleReadySubEl.textContent = [fields.plan, fields.price ? ('$' + fields.price + '/mo') : '', fields.installDate || 'no install date'].filter(Boolean).join(' \u2022 ');
+  saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
+
+  saleSendTextBtn.onclick = function(){ sendConfirmationText(fields); };
+}
+
+function formatInstallDateFriendly(iso){
+  if (!iso) return null;
+  var d = new Date(iso + 'T12:00:00');
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+}
+
+function sendConfirmationText(fields){
+  var installLine = fields.installDate
+    ? ('\u2705 Install date: ' + formatInstallDateFriendly(fields.installDate))
+    : '\u2705 Install date: to be scheduled';
+
+  var priceLine = fields.price ? ('$' + fields.price + ' monthly \u2705') : '';
+
+  var lines = [
+    installLine,
+    '',
+    fields.speed ? ('100% unlimited, ' + fields.speed + ' speed \u26a1') : '',
+    '',
+    priceLine,
+    '',
+    'No contract',
+    'Install included',
+    'Router included',
+    '',
+    'Refer me a Friend \u2014 Get $100 \ud83d\udcb0',
+    '',
+    '\u2014 ' + fields.repName + ', Nextlink Internet'
+  ].filter(function(l){ return l !== null && l !== undefined; });
+
+  var body = lines.join('\n');
+  var phone = (fields.phone || '').replace(/\D/g,'');
+  window.location.href = 'sms:' + phone + '&body=' + encodeURIComponent(body);
+}
+
+function syncToSheet(day, repSlug, entryId, fields, attempt){
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'text/plain' }, // avoids a CORS preflight against Apps Script
+    body: JSON.stringify({ action: 'appendSale', data: fields })
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
+    if (saleReadyViewEl.style.display !== 'none') saleSyncNoteEl.textContent = 'Synced to sheet \u2713';
+  }).catch(function(err){
+    if (attempt < 2){
+      setTimeout(function(){ syncToSheet(day, repSlug, entryId, fields, attempt + 1); }, 2000);
+    } else {
+      db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false);
+      if (saleReadyViewEl.style.display !== 'none') saleSyncNoteEl.textContent = 'Sheet sync failed \u2014 will retry from Sales Review';
+    }
+  });
+}
+
+bindTap(saleDoneBtnEl, function(){ closeSaleModal(); });
 
 /* ── Promo codes ─────────────────────────────────────────── */
 var CODES = { '20': 'BORRJWUI', '30': 'FBWXFIIO', '40': 'XLSCAQPQ' };
