@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v50 -->
+  <!-- counter-v52 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -288,7 +288,6 @@
       <div class="sale-ready-name" id="saleReadyName"></div>
       <div class="sale-ready-sub" id="saleReadySub"></div>
       <button class="sale-text-btn" id="saleSendText">Send Confirmation Text</button>
-      <button class="sale-done-btn" id="saleDoneBtn">Done</button>
       <div class="sale-sync-note" id="saleSyncNote">Syncing to sheet&hellip;</div>
     </div>
 
@@ -748,7 +747,6 @@ var saleReadyViewEl      = document.getElementById('saleReadyView');
 var saleReadyNameEl      = document.getElementById('saleReadyName');
 var saleReadySubEl       = document.getElementById('saleReadySub');
 var saleSendTextBtn      = document.getElementById('saleSendText');
-var saleDoneBtnEl        = document.getElementById('saleDoneBtn');
 var saleSyncNoteEl       = document.getElementById('saleSyncNote');
 var saleCompleteViewEl   = document.getElementById('saleCompleteView');
 var saleCompleteIconEl   = document.getElementById('saleCompleteIcon');
@@ -898,6 +896,7 @@ function checkGate(){
 
 function showCompleteState(state){
   showSaleView('complete');
+  var name = (_saleGate && _saleGate.fields && _saleGate.fields.customerName) || 'This deal';
   if (state === 'finishing'){
     saleCompleteIconEl.className = 'sale-complete-check ok';
     saleCompleteIconEl.textContent = '\u22ef';
@@ -907,14 +906,14 @@ function showCompleteState(state){
   } else if (state === 'done'){
     saleCompleteIconEl.className = 'sale-complete-check ok';
     saleCompleteIconEl.textContent = '\u2713';
-    saleCompleteTitleEl.textContent = 'This deal is done.';
-    saleCompleteSubEl.textContent = 'Text sent, and it\u2019s saved and synced. Nothing else to do here.';
+    saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
+    saleCompleteSubEl.textContent = name + ' is texted, saved, and synced. Deal info is on your clipboard.';
     saleCompleteDoneBtn.style.display = '';
   } else {
     saleCompleteIconEl.className = 'sale-complete-check warn';
     saleCompleteIconEl.textContent = '\u2713';
-    saleCompleteTitleEl.textContent = 'Text sent \u2014 sale is saved.';
-    saleCompleteSubEl.textContent = 'The sheet sync had trouble and will keep retrying on its own. Your data is safe either way \u2014 nothing you need to do.';
+    saleCompleteTitleEl.textContent = 'Text sent, saved \u2014 and copied.';
+    saleCompleteSubEl.textContent = name + '\u2019s info is on your clipboard. Sheet sync had trouble and will keep retrying on its own \u2014 nothing you need to do.';
     saleCompleteDoneBtn.style.display = '';
   }
 }
@@ -939,6 +938,40 @@ function formatWindow(raw){
   if (upper.indexOf('AM') !== -1) return '8am-12pm';
   if (upper.indexOf('PM') !== -1) return '1pm-5pm';
   return raw.replace(/\s+/g, '').toLowerCase(); // fallback for anything unrecognized
+}
+
+function buildClipboardText(fields){
+  var dateStr   = formatConfirmDate(fields.installDate);
+  var windowStr = formatWindow(fields.installWindow);
+  var installLine = dateStr
+    ? ('Install: ' + dateStr + (windowStr ? ' \u2014 ' + windowStr : ''))
+    : 'Install: TBD';
+
+  var lines = [fields.customerName ? (fields.customerName + ' \uD83D\uDEA8') : '\uD83D\uDEA8'];
+  if (fields.accId)  lines.push('Acc #: ' + fields.accId);
+  if (fields.phone)  lines.push('Phone: ' + formatPhoneDisplay(fields.phone));
+  if (fields.email)  lines.push('Email: ' + fields.email);
+  if (fields.address) lines.push('Address: ' + fields.address);
+  if (fields.plan && fields.price !== '') lines.push('Plan: ' + fields.plan + ' \u2014 $' + fields.price + '/mo');
+  lines.push(installLine);
+
+  return lines.join('\n');
+}
+
+function copyToClipboard(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(function(){ fallbackCopyText(text); });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:absolute;left:-9999px;top:0;';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
 }
 
 function sendConfirmationText(fields){
@@ -968,6 +1001,7 @@ function sendConfirmationText(fields){
 
   var body = lines.join('\n');
   var phone = (fields.phone || '').replace(/\D/g,'');
+  copyToClipboard(buildClipboardText(fields));
   window.location.href = 'sms:' + phone + '&body=' + encodeURIComponent(body);
 }
 
@@ -989,8 +1023,6 @@ function syncToSheet(day, repSlug, entryId, fields, attempt){
     return false;
   });
 }
-
-bindTap(saleDoneBtnEl, function(){ closeSaleModal(); });
 
 /* ── Promo codes ─────────────────────────────────────────── */
 var CODES = { '20': 'BORRJWUI', '30': 'FBWXFIIO', '40': 'XLSCAQPQ' };
