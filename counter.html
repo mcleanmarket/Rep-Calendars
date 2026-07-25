@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v43 -->
+  <!-- counter-v45 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -121,9 +121,14 @@
     .sale-proc-text { text-align: center; font-size: 13px; color: #999; }
     .sale-ready-name { text-align: center; font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 2px; }
     .sale-ready-sub { text-align: center; font-size: 12px; color: #888; margin-bottom: 18px; font-family: 'DM Mono', monospace; }
-    .sale-text-btn { width: 100%; padding: 15px; border: none; border-radius: 10px; background: #60a5fa; color: #06172e; font-size: 14.5px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
+    .sale-text-btn { width: 100%; padding: 15px; border: none; border-radius: 10px; background: #4ade80; color: #0a2412; font-size: 14.5px; font-weight: 800; cursor: pointer; touch-action: manipulation; margin-bottom: 10px; }
     .sale-done-btn { width: 100%; padding: 13px; border: 1px solid #2a2a2a; border-radius: 10px; background: #141414; color: #ccc; font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
     .sale-sync-note { text-align: center; font-size: 10.5px; color: #555; margin-top: 12px; font-family: 'DM Mono', monospace; }
+    .sale-complete-check { width: 56px; height: 56px; border-radius: 50%; margin: 4px auto 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .sale-complete-check.ok { background: #0f2418; color: #4ade80; }
+    .sale-complete-check.warn { background: #2e1400; color: #F5A31A; }
+    .sale-complete-title { text-align: center; font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .sale-complete-sub { text-align: center; font-size: 12.5px; color: #999; line-height: 1.6; margin-bottom: 20px; }
 
     /* Toast */
     .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(20px); background: #fff; color: #111; padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; z-index: 900; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
@@ -230,6 +235,13 @@
       <button class="sale-text-btn" id="saleSendText">Send Confirmation Text</button>
       <button class="sale-done-btn" id="saleDoneBtn">Done</button>
       <div class="sale-sync-note" id="saleSyncNote">Syncing to sheet&hellip;</div>
+    </div>
+
+    <div id="saleCompleteView" style="display:none;">
+      <div class="sale-complete-check" id="saleCompleteIcon"></div>
+      <div class="sale-complete-title" id="saleCompleteTitle"></div>
+      <div class="sale-complete-sub" id="saleCompleteSub"></div>
+      <button class="sale-done-btn" id="saleCompleteDoneBtn">New Sale</button>
     </div>
 
   </div>
@@ -524,6 +536,7 @@ function resetSaleModal() {
   saleSubmitBtn.textContent = 'Submit Sale';
   var retryBtn = saleProcessingViewEl.querySelector('.sale-text-btn');
   if (retryBtn) retryBtn.remove();
+  _saleGate = null;
   showSaleView('capture');
 }
 
@@ -599,11 +612,17 @@ var saleReadySubEl       = document.getElementById('saleReadySub');
 var saleSendTextBtn      = document.getElementById('saleSendText');
 var saleDoneBtnEl        = document.getElementById('saleDoneBtn');
 var saleSyncNoteEl       = document.getElementById('saleSyncNote');
+var saleCompleteViewEl   = document.getElementById('saleCompleteView');
+var saleCompleteIconEl   = document.getElementById('saleCompleteIcon');
+var saleCompleteTitleEl  = document.getElementById('saleCompleteTitle');
+var saleCompleteSubEl    = document.getElementById('saleCompleteSub');
+var saleCompleteDoneBtn  = document.getElementById('saleCompleteDoneBtn');
 
 function showSaleView(name){
   saleCaptureViewEl.style.display    = (name === 'capture')    ? '' : 'none';
   saleProcessingViewEl.style.display = (name === 'processing') ? '' : 'none';
   saleReadyViewEl.style.display      = (name === 'ready')      ? '' : 'none';
+  saleCompleteViewEl.style.display   = (name === 'complete')   ? '' : 'none';
 }
 
 function goToProcessing(day, repSlug, entryId, payload){
@@ -655,9 +674,26 @@ function runExtraction(day, repSlug, entryId, payload){
       status: parsed.install_date ? 'Scheduled' : 'Pending'
     };
 
-    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields);
-    showReadyView(day, repSlug, entryId, fields);
-    syncToSheet(day, repSlug, entryId, fields, 0);
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
+      showReadyView(day, repSlug, entryId, fields);
+    }).catch(function(err){
+      saleProcTextEl.innerHTML = 'Order was read, but saving it failed.<br><span style="color:#f87171; font-size:11px;">' + (err.message || err) + '</span>';
+      var retryBtn = document.createElement('button');
+      retryBtn.className = 'sale-text-btn';
+      retryBtn.style.marginTop = '16px';
+      retryBtn.textContent = 'Try Again';
+      retryBtn.onclick = function(){
+        retryBtn.remove();
+        saleProcTextEl.innerHTML = 'Saving\u2026';
+        db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
+          showReadyView(day, repSlug, entryId, fields);
+        }).catch(function(err2){
+          saleProcTextEl.innerHTML = 'Still failing.<br><span style="color:#f87171; font-size:11px;">' + (err2.message || err2) + '</span>';
+          saleProcessingViewEl.appendChild(retryBtn);
+        });
+      };
+      saleProcessingViewEl.appendChild(retryBtn);
+    });
   }).catch(function(err){
     saleProcTextEl.innerHTML = 'Couldn\u2019t read that order.<br><span style="color:#f87171; font-size:11px;">' + (err.message || err) + '</span>';
     var retryBtn = document.createElement('button');
@@ -669,14 +705,82 @@ function runExtraction(day, repSlug, entryId, payload){
   });
 }
 
+var _saleGate = null; // tracks the two conditions that must both be true before "complete"
+
 function showReadyView(day, repSlug, entryId, fields){
   showSaleView('ready');
   saleReadyNameEl.textContent = fields.customerName || '(name not read)';
-  saleReadySubEl.textContent = [fields.plan, fields.price ? ('$' + fields.price + '/mo') : '', fields.installDate || 'no install date'].filter(Boolean).join(' \u2022 ');
+  saleReadySubEl.textContent = fields.phone ? formatPhoneDisplay(fields.phone) : '(no phone read)';
   saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
 
-  saleSendTextBtn.onclick = function(){ sendConfirmationText(fields); };
+  _saleGate = { textSent: false, syncDone: false, syncOk: null, fields: fields };
+
+  saleSendTextBtn.onclick = function(){
+    sendConfirmationText(fields);
+    _saleGate.textSent = true;
+    checkGate();
+  };
+
+  syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
+    _saleGate.syncDone = true;
+    _saleGate.syncOk = ok;
+    checkGate();
+  });
 }
+
+function formatPhoneDisplay(p){
+  var d = p.replace(/\D/g,'');
+  if (d.length !== 10) return p;
+  return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+}
+
+function checkGate(){
+  if (!_saleGate) return;
+
+  if (!_saleGate.textSent){
+    // Text not sent yet \u2014 just keep the small sync note updated, stay on the ready screen
+    saleSyncNoteEl.textContent = _saleGate.syncDone
+      ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
+      : 'Syncing to sheet\u2026';
+    return;
+  }
+
+  if (!_saleGate.syncDone){
+    showCompleteState('finishing');
+    return;
+  }
+
+  if (_saleGate.syncOk){
+    showCompleteState('done');
+  } else {
+    showCompleteState('saved-not-synced');
+  }
+}
+
+function showCompleteState(state){
+  showSaleView('complete');
+  if (state === 'finishing'){
+    saleCompleteIconEl.className = 'sale-complete-check ok';
+    saleCompleteIconEl.textContent = '\u22ef';
+    saleCompleteTitleEl.textContent = 'Wrapping up\u2026';
+    saleCompleteSubEl.textContent = 'Just finishing the sheet sync \u2014 one second.';
+    saleCompleteDoneBtn.style.display = 'none';
+  } else if (state === 'done'){
+    saleCompleteIconEl.className = 'sale-complete-check ok';
+    saleCompleteIconEl.textContent = '\u2713';
+    saleCompleteTitleEl.textContent = 'This deal is done.';
+    saleCompleteSubEl.textContent = 'Text sent, and it\u2019s saved and synced. Nothing else to do here.';
+    saleCompleteDoneBtn.style.display = '';
+  } else {
+    saleCompleteIconEl.className = 'sale-complete-check warn';
+    saleCompleteIconEl.textContent = '\u2713';
+    saleCompleteTitleEl.textContent = 'Text sent \u2014 sale is saved.';
+    saleCompleteSubEl.textContent = 'The sheet sync had trouble and will keep retrying on its own. Your data is safe either way \u2014 nothing you need to do.';
+    saleCompleteDoneBtn.style.display = '';
+  }
+}
+
+bindTap(saleCompleteDoneBtn, function(){ closeSaleModal(); });
 
 function formatConfirmDate(iso){
   if (!iso) return null;
@@ -729,21 +833,21 @@ function sendConfirmationText(fields){
 }
 
 function syncToSheet(day, repSlug, entryId, fields, attempt){
-  fetch(APPS_SCRIPT_URL, {
+  return fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'content-type': 'text/plain' }, // avoids a CORS preflight against Apps Script
     body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: fields })
   }).then(function(r){ return r.json(); }).then(function(res){
     if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
     db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
-    if (saleReadyViewEl.style.display !== 'none') saleSyncNoteEl.textContent = 'Synced to sheet \u2713';
+    return true;
   }).catch(function(err){
     if (attempt < 2){
-      setTimeout(function(){ syncToSheet(day, repSlug, entryId, fields, attempt + 1); }, 2000);
-    } else {
-      db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false);
-      if (saleReadyViewEl.style.display !== 'none') saleSyncNoteEl.textContent = 'Sheet sync failed \u2014 will retry from Sales Review';
+      return new Promise(function(resolve){ setTimeout(resolve, 2000); })
+        .then(function(){ return syncToSheet(day, repSlug, entryId, fields, attempt + 1); });
     }
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false);
+    return false;
   });
 }
 
