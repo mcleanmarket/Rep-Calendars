@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v38 -->
+  <!-- counter-v39 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -306,6 +306,7 @@ function standardizePlan(rawPlan){
 
 // Your existing deployed Apps Script Web App \u2014 needs a new 'appendSale' action added (see chat)
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBKyT5VkDzEo76FlYPT1mlxjg0gTVUJuxfYr9PDw3isKgPGnssLKLblz3jC4vF1TYuCA/exec';
+var APPEND_SECRET = 'nextlink-motion-9f2k7q'; // must match APPEND_SECRET in Code.gs exactly
 
 var _local = { doors:0, engaged:0, sales:0 };
 var _data  = {};
@@ -715,7 +716,7 @@ function syncToSheet(day, repSlug, entryId, fields, attempt){
   fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'content-type': 'text/plain' }, // avoids a CORS preflight against Apps Script
-    body: JSON.stringify({ action: 'appendSale', data: fields })
+    body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: fields })
   }).then(function(r){ return r.json(); }).then(function(res){
     if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
     db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
