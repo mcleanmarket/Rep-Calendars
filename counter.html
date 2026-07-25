@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v54 -->
+  <!-- counter-v55 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -141,7 +141,7 @@
 <body ontouchstart="">
 
 <div class="hdr">
-  <img class="logo-img" src="/motion-logo-nobackground.png" alt="Motion">
+  <img class="logo-img" id="logoImg" src="/motion-logo-nobackground.png" alt="Motion">
   <div class="hdr-right">
     <button class="promo-btn" id="promo20">20 OFF</button>
     <button class="promo-btn" id="promo30">30 OFF</button>
@@ -320,6 +320,13 @@ if (!REPS[slug]) slug = 'logan';
 var repFirst = REPS[slug].split(' ')[0];
 
 document.getElementById('my-label').textContent  = repFirst + "'s Counter";
+
+// Logo doubles as a toggle to Sales Review \u2014 Logan only, everyone else's stays inert
+if (slug === 'logan') {
+  var logoImgEl = document.getElementById('logoImg');
+  logoImgEl.style.cursor = 'pointer';
+  bindTap(logoImgEl, function(){ window.location.href = '/sales-review.html'; });
+}
 var now = new Date();
 document.getElementById('hdr-date').textContent   = DN[now.getDay()] + ' ' + MN[now.getMonth()] + ' ' + now.getDate();
 
