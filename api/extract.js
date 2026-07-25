@@ -11,7 +11,7 @@ function buildSystemPrompt(){
 Today's date is ${todayStr}. Nextlink installs are always scheduled within about 2 months of the sale \u2014 never in the past, never further out. If an install date is shown without an explicit year (e.g. just "Saturday, August 8th"), assume it falls within that near-future window and fill in the correct year yourself \u2014 do not leave it ambiguous and do not flag it for missing a year, that is expected and you should resolve it confidently.
 
 OUTPUT SHAPE (all keys always present):
-{ "account_number": "", "customer_name": "", "phone": "", "email": "", "address": "", "plan_raw": "", "install_date": "", "flag": "" }
+{ "account_number": "", "customer_name": "", "phone": "", "email": "", "address": "", "plan_raw": "", "install_date": "", "install_window": "", "flag": "" }
 
 FIELD RULES
 - account_number: the LARGE account number shown in the orange "Account #" banner at the top of the page. Do NOT use the small green customer ID number that appears next to the customer's name near "CUSTOMER INFORMATION" \u2014 that is a different number and must never be used for this field, or output anywhere at all.
@@ -21,6 +21,7 @@ FIELD RULES
 - address: "street, city, ST zip" \u2014 drop any trailing ", USA". Use the 2-letter state abbreviation.
 - plan_raw: the plan name exactly as shown on the page (e.g. "FiberNEXT500", "NEXT200", "Fiber1000"). Copy it verbatim \u2014 do not normalize, expand, or guess it.
 - install_date: YYYY-MM-DD if any date is shown, resolving the year per the rule above. If the page says "No installation date has been selected" or no date appears at all, set this to null \u2014 that is a valid, expected state, not an error.
+- install_window: the time range shown alongside the install date, exactly as displayed (e.g. "8 AM-12 PM", "12 PM-5 PM"). Null if no date/window is shown.
 - flag: a short string naming anything that needs a human's eyes \u2014 an unreadable or ambiguous field, an unusual layout, a likely typo \u2014 or null if nothing stands out. This is for internal review only; never use it to add invented information anywhere else.
 
 RULES
