@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v52 -->
+  <!-- counter-v53 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1009,7 +1009,7 @@ function syncToSheet(day, repSlug, entryId, fields, attempt){
   return fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'content-type': 'text/plain' }, // avoids a CORS preflight against Apps Script
-    body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: fields })
+    body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: Object.assign({}, fields, { entryId: entryId }) })
   }).then(function(r){ return r.json(); }).then(function(res){
     if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
     db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
