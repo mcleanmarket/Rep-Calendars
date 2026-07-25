@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- v56 -->
+  <!-- v57 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -527,7 +527,7 @@ function renderCalendar() {
   // ── In Queue — built here, inserted just before today ──
   // Schedule = all reps unscheduled; My Schedule & Track = this rep only
   var queueSource = (_mode === 'schedule') ? _allRows : _repRows;
-  var queued = queueSource.filter(function(r){ return !parseDate(r['Install Date']) && (r['Status']||'') !== 'Pending'; });
+  var queued = queueSource.filter(function(r){ var s=(r['Status']||''); return s === 'Pending' || !parseDate(r['Install Date']); });
   var queueBlock = null;
   var queueInserted = false;
   if (queued.length) {
@@ -535,8 +535,10 @@ function renderCalendar() {
     queueBlock.className = 'day in-queue';
     var qRows = queued.map(function(r){
       var ini = REP_INITIALS[r['Rep Name']]||'';
+      var isPend = (r['Status']||'') === 'Pending';
+      var statusCell = isPend ? statusBtn(r['Status'],'track') : statusBtn(r['Status']);
       return '<tr>'
-        +'<td class="td-status">'+statusBtn(r['Status'])+'</td>'
+        +'<td class="td-status">'+statusCell+'</td>'
         +'<td class="td-name">'+(r['Customer Name']||'—')+'</td>'
         +'<td class="td-city">'+extractCity(r['Address'])+'</td>'
         +'<td class="td-plan">'+fmtPlan(r['Plan'])+'</td>'
