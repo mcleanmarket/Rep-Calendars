@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v45 -->
+  <!-- counter-v46 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -114,6 +114,9 @@
     .sale-submit:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
     .sale-status { text-align: center; font-size: 12px; color: #999; margin-top: 10px; min-height: 16px; }
     .sale-status.err { color: #ef4444; font-weight: 700; }
+    .sale-mode-link { display: block; text-align: center; font-size: 12px; color: #60a5fa; font-weight: 700; margin-bottom: 16px; cursor: pointer; touch-action: manipulation; }
+    .sale-input { width: 100%; background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; color: #f0f0f0; font-size: 16px; font-family: 'DM Sans', sans-serif; padding: 12px; margin-bottom: 14px; }
+    select.sale-input { appearance: none; -webkit-appearance: none; }
 
     /* Post-submit: processing + ready-to-text states */
     .sale-spin { width: 26px; height: 26px; border: 3px solid #2a2a2a; border-top-color: #4ade80; border-radius: 50%; margin: 6px auto 16px; animation: saleSpin .8s linear infinite; }
@@ -200,6 +203,7 @@
 
     <div id="saleCaptureView">
       <div class="sale-warn">&#128680; MAKE SURE THE INSTALL DATE IS INCLUDED IN THE SCREENSHOT &#128680;</div>
+      <span class="sale-mode-link" id="goManualLink">Called this deal in instead? Enter it manually &rarr;</span>
 
       <div class="sale-label">Screenshot &mdash; Full Order</div>
       <label class="sale-file-btn" id="saleFileBtn">Tap to upload screenshot</label>
@@ -222,6 +226,57 @@
       <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
       <div class="sale-status" id="saleStatus"></div>
       <span class="warn-cancel" id="saleCancel" style="display:block; text-align:center; margin-top:14px;">Cancel</span>
+    </div>
+
+    <div id="saleManualView" style="display:none;">
+      <div class="sale-warn">&#128222; PHONED-IN DEAL &mdash; DOUBLE CHECK EVERY FIELD &#128222;</div>
+      <span class="sale-mode-link" id="goCaptureLink">Have a screenshot instead? Go back &rarr;</span>
+
+      <div class="sale-label">Customer Name</div>
+      <input class="sale-input" id="manCustomerName" type="text" placeholder="Full name">
+
+      <div class="sale-label">Phone</div>
+      <input class="sale-input" id="manPhone" type="tel" placeholder="(555) 555-5555">
+
+      <div class="sale-label">Email <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <input class="sale-input" id="manEmail" type="email" placeholder="name@email.com">
+
+      <div class="sale-label">Address <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <input class="sale-input" id="manAddress" type="text" placeholder="Street, City, ST ZIP">
+
+      <div class="sale-label">Plan</div>
+      <select class="sale-input" id="manPlan">
+        <option value="">Select a plan&hellip;</option>
+        <option value="NEXT100">NEXT100 &mdash; $37/mo</option>
+        <option value="NEXT200">NEXT200 &mdash; $37/mo</option>
+        <option value="NEXT300">NEXT300 &mdash; $57/mo</option>
+        <option value="NEXT400">NEXT400 &mdash; $57/mo</option>
+        <option value="NEXT500">NEXT500 &mdash; $57/mo</option>
+        <option value="NEXT1000">NEXT1000 &mdash; $80/mo</option>
+        <option value="Fiber500">Fiber500 &mdash; $30/mo</option>
+        <option value="Fiber1000">Fiber1000 &mdash; $50/mo</option>
+        <option value="Fiber2000">Fiber2000 &mdash; $80/mo</option>
+      </select>
+
+      <div class="sale-label">Account # <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <input class="sale-input" id="manAccId" type="text" placeholder="If assigned yet">
+
+      <div class="sale-label">Install Date <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <input class="sale-input" id="manInstallDate" type="date">
+
+      <div class="sale-label">Install Window <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <select class="sale-input" id="manInstallWindow">
+        <option value="">Not set</option>
+        <option value="8 AM-12 PM">Morning (8am-12pm)</option>
+        <option value="12 PM-5 PM">Afternoon (1pm-5pm)</option>
+      </select>
+
+      <div class="sale-label">Notes <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
+      <textarea class="sale-textarea" id="manNotes" style="min-height:60px;" placeholder="Anything worth flagging"></textarea>
+
+      <button class="sale-submit" id="manSubmit">Submit Called-In Deal</button>
+      <div class="sale-status" id="manStatus"></div>
+      <span class="warn-cancel" id="manCancel" style="display:block; text-align:center; margin-top:14px;">Cancel</span>
     </div>
 
     <div id="saleProcessingView" style="display:none;">
@@ -467,6 +522,7 @@ var saleNotesEl   = document.getElementById('saleNotes');
 var saleSubmitBtn = document.getElementById('saleSubmit');
 var saleStatusEl  = document.getElementById('saleStatus');
 var overlaySaleEl = document.getElementById('overlaySale');
+var saleManualViewEl = document.getElementById('saleManualView');
 var salePasteSectionEl = document.getElementById('salePasteSection');
 var saleRemoveShotEl   = document.getElementById('saleRemoveShot');
 var saleBlob = null;
@@ -521,6 +577,86 @@ function openSaleModal() {
   overlaySaleEl.classList.add('open');
 }
 
+bindTap(document.getElementById('goManualLink'), function(){ showSaleView('manual'); });
+bindTap(document.getElementById('goCaptureLink'), function(){ showSaleView('capture'); });
+bindTap(document.getElementById('manCancel'), function(){ closeSaleModal(); });
+
+function resetManualForm(){
+  ['manCustomerName','manPhone','manEmail','manAddress','manAccId','manInstallDate','manNotes'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('manPlan').value = '';
+  document.getElementById('manInstallWindow').value = '';
+  var manStatusEl = document.getElementById('manStatus');
+  manStatusEl.textContent = '';
+  manStatusEl.className = 'sale-status';
+  var submitBtn = document.getElementById('manSubmit');
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Submit Called-In Deal';
+}
+
+bindTap(document.getElementById('manSubmit'), function(){
+  var name    = document.getElementById('manCustomerName').value.trim();
+  var phone   = document.getElementById('manPhone').value.trim();
+  var plan    = document.getElementById('manPlan').value;
+  var email   = document.getElementById('manEmail').value.trim();
+  var address = document.getElementById('manAddress').value.trim();
+  var accId   = document.getElementById('manAccId').value.trim();
+  var installDate   = document.getElementById('manInstallDate').value;
+  var installWindow = document.getElementById('manInstallWindow').value;
+  var notes   = document.getElementById('manNotes').value.trim();
+
+  var manStatusEl = document.getElementById('manSubmit');
+  var statusMsgEl = document.getElementById('manStatus');
+
+  if (!name || !phone || !plan){
+    statusMsgEl.textContent = 'Name, phone, and plan are required.';
+    statusMsgEl.className = 'sale-status err';
+    return;
+  }
+
+  manStatusEl.disabled = true;
+  manStatusEl.textContent = 'Saving\u2026';
+  statusMsgEl.textContent = '';
+  statusMsgEl.className = 'sale-status';
+
+  var day = todayKey();
+  var std = standardizePlan(plan);
+  var summary = 'Called in: ' + name + ' \u2014 ' + phone + (plan ? ' \u2014 ' + plan : '') + (installDate ? ' \u2014 install ' + installDate : '');
+
+  var rawPayload = { type: 'manual', text: summary, notes: notes || null, ts: Date.now(), rep: REPS[slug] };
+  var ref = db.ref('salesLog/' + day + '/' + slug).push();
+
+  ref.set(rawPayload).then(function(){
+    increment('sales');
+    var fields = {
+      dateSold: day,
+      repName: REPS[slug],
+      accId: accId,
+      phone: phone,
+      customerName: name,
+      email: email,
+      address: address,
+      plan: std.plan,
+      speed: std.speed || '',
+      price: std.price,
+      installDate: installDate || '',
+      installWindow: installWindow || '',
+      notes: notes,
+      status: installDate ? 'Scheduled' : 'Pending'
+    };
+    return db.ref('salesLog/' + day + '/' + slug + '/' + ref.key + '/processed').set(fields).then(function(){
+      resetManualForm();
+      showReadyView(day, slug, ref.key, fields);
+    });
+  }).catch(function(err){
+    statusMsgEl.textContent = 'Save failed \u2014 try again.';
+    statusMsgEl.className = 'sale-status err';
+    manStatusEl.disabled = false;
+    manStatusEl.textContent = 'Submit Called-In Deal';
+  });
+});
+
 function resetSaleModal() {
   saleBlob = null;
   saleFileInput.value = '';
@@ -537,6 +673,7 @@ function resetSaleModal() {
   var retryBtn = saleProcessingViewEl.querySelector('.sale-text-btn');
   if (retryBtn) retryBtn.remove();
   _saleGate = null;
+  resetManualForm();
   showSaleView('capture');
 }
 
@@ -620,6 +757,7 @@ var saleCompleteDoneBtn  = document.getElementById('saleCompleteDoneBtn');
 
 function showSaleView(name){
   saleCaptureViewEl.style.display    = (name === 'capture')    ? '' : 'none';
+  saleManualViewEl.style.display     = (name === 'manual')     ? '' : 'none';
   saleProcessingViewEl.style.display = (name === 'processing') ? '' : 'none';
   saleReadyViewEl.style.display      = (name === 'ready')      ? '' : 'none';
   saleCompleteViewEl.style.display   = (name === 'complete')   ? '' : 'none';
