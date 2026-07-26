@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v16 -->
+<!-- sales-review-v18 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
 
 <div class="hdr">
   <div style="display:flex; align-items:center; gap:10px;">
-    <img src="/motion-logo-nobackground.png" alt="Motion" style="height:26px; width:auto; display:block; cursor:pointer;" onclick="window.location.href='/logan'">
+    <img src="/motion-logo-nobackground.png" alt="Motion" style="height:26px; width:auto; display:block; cursor:pointer;" onclick="window.location.href='/counter/logan'">
     <h1>Sales Review</h1>
   </div>
   <div class="hdr-controls">
@@ -440,13 +440,15 @@ function standardizePlan(rawPlan){
   var speedMatch = rawPlan.match(/(\d{2,4})/);
   if (!speedMatch) return { plan: rawPlan, price:'' };
   var speed = parseInt(speedMatch[1], 10);
-  var isNext = /next/i.test(rawPlan);
-  if (isNext){
-    var p1 = STANDARD_PRICES[speed];
-    return { plan: 'NEXT' + speed, price: (p1 != null ? p1 : '') };
+  // Check "fiber" FIRST \u2014 real Fiber plans are named "FiberNEXT500" etc, so
+  // they also contain "next" and would be misclassified if checked second.
+  var isFiber = /fiber/i.test(rawPlan);
+  if (isFiber){
+    var pf = FIBER_PRICES[speed];
+    return { plan: 'Fiber' + speed, price: (pf != null ? pf : '') };
   } else {
-    var p2 = FIBER_PRICES[speed];
-    return { plan: 'Fiber' + speed, price: (p2 != null ? p2 : '') };
+    var ps = STANDARD_PRICES[speed];
+    return { plan: 'NEXT' + speed, price: (ps != null ? ps : '') };
   }
 }
 
