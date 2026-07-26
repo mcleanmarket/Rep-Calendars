@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v56 -->
+  <!-- counter-v57 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -252,6 +252,7 @@
         <option value="NEXT300">NEXT300 &mdash; $57/mo</option>
         <option value="NEXT400">NEXT400 &mdash; $57/mo</option>
         <option value="NEXT500">NEXT500 &mdash; $57/mo</option>
+        <option value="NEXT750">NEXT750 &mdash; $80/mo</option>
         <option value="NEXT1000">NEXT1000 &mdash; $80/mo</option>
         <option value="Fiber500">Fiber500 &mdash; $30/mo</option>
         <option value="Fiber1000">Fiber1000 &mdash; $50/mo</option>
@@ -360,7 +361,7 @@ var db      = firebase.database();
 var storage = firebase.storage();
 
 // Same standardization table as sales-review.html \u2014 keep both in sync if this ever changes
-var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 1000:80 };
+var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 750:80, 1000:80 };
 var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
 function standardizePlan(rawPlan){
   if (!rawPlan) return { plan:'', price:'' };
@@ -789,6 +790,7 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
       '<option value="NEXT300">NEXT300 \u2014 $57/mo</option>' +
       '<option value="NEXT400">NEXT400 \u2014 $57/mo</option>' +
       '<option value="NEXT500">NEXT500 \u2014 $57/mo</option>' +
+      '<option value="NEXT750">NEXT750 \u2014 $80/mo</option>' +
       '<option value="NEXT1000">NEXT1000 \u2014 $80/mo</option>' +
       '<option value="Fiber500">Fiber500 \u2014 $30/mo</option>' +
       '<option value="Fiber1000">Fiber1000 \u2014 $50/mo</option>' +
