@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v18 -->
+<!-- sales-review-v19 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -432,7 +432,7 @@ document.getElementById('processDay').addEventListener('click', function(){
 // Hardcoded plan/price standardization \u2014 the screenshot's own price is never used.
 // STANDARD tier speeds are for "NEXT..." plans (including ones prefixed "FiberNEXT").
 // FIBER tier speeds are for plans named just "Fiber..." with no "NEXT" in the name.
-var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 1000:80 };
+var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 750:80, 1000:80 };
 var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
 
 function standardizePlan(rawPlan){
