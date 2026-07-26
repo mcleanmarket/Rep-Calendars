@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v55 -->
+  <!-- counter-v56 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -367,13 +367,15 @@ function standardizePlan(rawPlan){
   var speedMatch = rawPlan.match(/(\d{2,4})/);
   if (!speedMatch) return { plan: rawPlan, price:'' };
   var speed = parseInt(speedMatch[1], 10);
-  var isNext = /next/i.test(rawPlan);
-  if (isNext){
-    var p1 = STANDARD_PRICES[speed];
-    return { plan: 'NEXT' + speed, price: (p1 != null ? p1 : ''), speed: speed };
+  // Check "fiber" FIRST \u2014 real Fiber plans are named "FiberNEXT500" etc, so
+  // they also contain "next" and would be misclassified if checked second.
+  var isFiber = /fiber/i.test(rawPlan);
+  if (isFiber){
+    var pf = FIBER_PRICES[speed];
+    return { plan: 'Fiber' + speed, price: (pf != null ? pf : ''), speed: speed };
   } else {
-    var p2 = FIBER_PRICES[speed];
-    return { plan: 'Fiber' + speed, price: (p2 != null ? p2 : ''), speed: speed };
+    var ps = STANDARD_PRICES[speed];
+    return { plan: 'NEXT' + speed, price: (ps != null ? ps : ''), speed: speed };
   }
 }
 
@@ -775,6 +777,66 @@ function goToProcessing(day, repSlug, entryId, payload){
   runExtraction(day, repSlug, entryId, payload);
 }
 
+function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
+  saleProcessingViewEl.innerHTML =
+    '<div style="text-align:left;">' +
+    '<div class="sale-warn" style="text-align:left;">&#9888;&#65039; Couldn\u2019t price this plan automatically. Raw text read: <b>&ldquo;' + escapeHtmlSale(parsed.plan_raw || '(nothing read)') + '&rdquo;</b>. Pick the correct plan below \u2014 nothing gets sent until this is confirmed.</div>' +
+    '<div class="sale-label">Plan</div>' +
+    '<select class="sale-input" id="planFixSelect">' +
+      '<option value="">Select a plan\u2026</option>' +
+      '<option value="NEXT100">NEXT100 \u2014 $37/mo</option>' +
+      '<option value="NEXT200">NEXT200 \u2014 $37/mo</option>' +
+      '<option value="NEXT300">NEXT300 \u2014 $57/mo</option>' +
+      '<option value="NEXT400">NEXT400 \u2014 $57/mo</option>' +
+      '<option value="NEXT500">NEXT500 \u2014 $57/mo</option>' +
+      '<option value="NEXT1000">NEXT1000 \u2014 $80/mo</option>' +
+      '<option value="Fiber500">Fiber500 \u2014 $30/mo</option>' +
+      '<option value="Fiber1000">Fiber1000 \u2014 $50/mo</option>' +
+      '<option value="Fiber2000">Fiber2000 \u2014 $80/mo</option>' +
+    '</select>' +
+    '<button class="sale-text-btn" id="planFixConfirm">Confirm &amp; Continue</button>' +
+    '</div>';
+
+  document.getElementById('planFixConfirm').onclick = function(){
+    var chosen = document.getElementById('planFixSelect').value;
+    if (!chosen){ return; }
+    var std2 = standardizePlan(chosen);
+
+    var fields = {
+      dateSold: day,
+      repName: REPS[repSlug],
+      accId: parsed.account_number || '',
+      phone: parsed.phone || '',
+      customerName: parsed.customer_name || '',
+      email: parsed.email || '',
+      address: parsed.address || '',
+      plan: std2.plan,
+      speed: std2.speed || '',
+      price: std2.price,
+      installDate: parsed.install_date || '',
+      installWindow: parsed.install_window || '',
+      notes: (payload.notes || '').trim(),
+      status: parsed.install_date ? 'Scheduled' : 'Pending'
+    };
+
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
+      restoreProcessingViewMarkup();
+      showReadyView(day, repSlug, entryId, fields);
+    }).catch(function(){
+      toast('Save failed \u2014 try again');
+    });
+  };
+}
+
+function escapeHtmlSale(s){
+  return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+}
+
+function restoreProcessingViewMarkup(){
+  saleProcessingViewEl.innerHTML = '<div class="sale-spin"></div><div class="sale-proc-text" id="saleProcText">Reading order details\u2026</div>';
+  saleProcTextEl = document.getElementById('saleProcText');
+}
+
 function runExtraction(day, repSlug, entryId, payload){
   var contentBlocks;
   if (payload.type === 'photo' && payload.url){
@@ -801,6 +863,11 @@ function runExtraction(day, repSlug, entryId, payload){
     if (parsed.error) throw new Error('not a recognizable order');
 
     var std = standardizePlan(parsed.plan_raw);
+
+    if (std.price === ''){
+      showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std);
+      return;
+    }
     var fields = {
       dateSold: day,
       repName: REPS[repSlug],
