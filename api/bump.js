@@ -42,7 +42,12 @@ export default async function handler(req, res) {
     // never touches sales or the other field, so it can never clobber
     // something the app itself is doing at the same moment.
     const currentRes = await fetch(`${base}/${field}.json`);
-    const current = (await currentRes.json()) || 0;
+    if (!currentRes.ok) {
+      res.status(502).json({ ok: false, error: `Firebase read failed (${currentRes.status})` });
+      return;
+    }
+    const rawCurrent = await currentRes.json();
+    const current = typeof rawCurrent === 'number' ? rawCurrent : 0; // never trust an unexpected shape
     const newVal = current + 1;
 
     const patch = { [field]: newVal };
@@ -50,11 +55,24 @@ export default async function handler(req, res) {
       patch.firstDoor = Date.now(); // matches the app's own fresh-stamp-on-0-to-1 behavior
     }
 
-    await fetch(`${base}.json`, {
+    const patchRes = await fetch(`${base}.json`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(patch)
     });
+    if (!patchRes.ok) {
+      res.status(502).json({ ok: false, error: `Firebase write failed (${patchRes.status})` });
+      return;
+    }
+
+    // Confirm what's actually in Firebase now matches what we intended \u2014
+    // don't just trust that a 200 from the write step means it landed right.
+    const verifyRes = await fetch(`${base}/${field}.json`);
+    const verifyVal = verifyRes.ok ? await verifyRes.json() : null;
+    if (verifyVal !== newVal) {
+      res.status(502).json({ ok: false, error: `Write didn't verify \u2014 expected ${newVal}, found ${verifyVal}` });
+      return;
+    }
 
     res.status(200).json({ ok: true, rep, field, newCount: newVal });
   } catch (err) {
