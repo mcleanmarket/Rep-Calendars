@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v19 -->
+<!-- sales-review-v20 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -97,9 +97,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="/reps.js"></script>
 <script>
-var REPS = { logan:'Logan McLean', brycen:'Brycen Perkins', sami:'Sami Layadi', connor:'Connor McLean', jacob:'Jacob Denver' };
-var ORDER = ['logan','brycen','sami','connor','jacob'];
+// REPS and ORDER now come from /reps.js (loaded via <script> tag above this one)
 
 firebase.initializeApp({
   apiKey:            "AIzaSyA8swfoYsvJsU0ugfxFmJTs2almBk7DGVE",
