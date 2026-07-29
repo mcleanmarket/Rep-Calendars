@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v20 -->
+<!-- sales-review-v22 -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -281,9 +281,18 @@ function renderSyncedPanel(){
           return '<td' + cls + '>' + escapeHtml(f[c] || '') + '</td>';
         }).join('') + '</tr>';
       }).join('')
-    + '</tbody></table></div>';
+    + '</tbody></table></div>'
+    + '<button class="btn primary" id="copySyncedRows" style="margin-top:10px;">Copy rows</button>';
 
   wrap.innerHTML = html;
+
+  document.getElementById('copySyncedRows').addEventListener('click', function(){
+    var tsv = rows.map(function(r){
+      return cols.map(function(c){ return String(r.fields[c] || '').replace(/\t/g,' ').replace(/\n/g,' '); }).join('\t');
+    }).join('\n');
+    navigator.clipboard.writeText(tsv).then(function(){ toast('Rows copied \u2014 paste into the sheet'); })
+      .catch(function(){ toast('Copy failed'); });
+  });
 }
 
 function resyncAllFailed(){
@@ -298,13 +307,23 @@ function resyncAllFailed(){
   });
   if (!jobs.length) return;
   toast('Retrying ' + jobs.length + ' sale' + (jobs.length > 1 ? 's' : '') + '\u2026');
-  jobs.forEach(function(j){ resyncEntry(j.rep, j.id, null); });
+
+  // One at a time, with a short gap between each \u2014 firing them all at once
+  // hits Apps Script simultaneously and can cause some to time out waiting
+  // on the script lock even though nothing is actually broken.
+  function runNext(i){
+    if (i >= jobs.length) return;
+    resyncEntry(jobs[i].rep, jobs[i].id, null).then(function(){
+      setTimeout(function(){ runNext(i + 1); }, 600);
+    });
+  }
+  runNext(0);
 }
 
 function resyncEntry(repSlug, id, linkEl){
   if (linkEl) linkEl.textContent = 'retrying\u2026';
   var day = _currentDay;
-  db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed').once('value').then(function(snap){
+  return db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed').once('value').then(function(snap){
     var fields = snap.val();
     if (!fields) throw new Error('no processed data found');
     return fetch(APPS_SCRIPT_URL, {
@@ -312,14 +331,15 @@ function resyncEntry(repSlug, id, linkEl){
       headers: { 'content-type': 'text/plain' },
       body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: Object.assign({}, fields, { entryId: id }) })
     }).then(function(r){ return r.json(); }).then(function(res){
-      if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
+      if (!res || res.ok !== true) throw new Error((res && res.error) || 'sheet push not confirmed');
       return db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed/syncedToSheet').set(true);
     });
   }).then(function(){
     toast('Synced to sheet');
-  }).catch(function(){
+  }).catch(function(err){
     db.ref('salesLog/' + day + '/' + repSlug + '/' + id + '/processed/syncedToSheet').set(false);
-    toast('Still failing \u2014 check Apps Script');
+    console.error('Resync failed for', repSlug, id, err);
+    toast('Failed: ' + (err.message || err));
   });
 }
 
