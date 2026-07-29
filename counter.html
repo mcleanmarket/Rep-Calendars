@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v58 -->
+  <!-- counter-v59 -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -657,7 +657,7 @@ bindTap(document.getElementById('manSubmit'), function(){
     };
     return db.ref('salesLog/' + day + '/' + slug + '/' + ref.key + '/processed').set(fields).then(function(){
       resetManualForm();
-      showReadyView(day, slug, ref.key, fields);
+      syncThenShowReady(day, slug, ref.key, fields);
     });
   }).catch(function(err){
     statusMsgEl.textContent = 'Save failed \u2014 try again.';
@@ -682,7 +682,6 @@ function resetSaleModal() {
   saleSubmitBtn.textContent = 'Submit Sale';
   var retryBtn = saleProcessingViewEl.querySelector('.sale-text-btn');
   if (retryBtn) retryBtn.remove();
-  _saleGate = null;
   resetManualForm();
   showSaleView('capture');
 }
@@ -822,8 +821,7 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
     };
 
     db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
-      restoreProcessingViewMarkup();
-      showReadyView(day, repSlug, entryId, fields);
+      syncThenShowReady(day, repSlug, entryId, fields);
     }).catch(function(){
       toast('Save failed \u2014 try again');
     });
@@ -888,7 +886,7 @@ function runExtraction(day, repSlug, entryId, payload){
     };
 
     db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
-      showReadyView(day, repSlug, entryId, fields);
+      syncThenShowReady(day, repSlug, entryId, fields);
     }).catch(function(err){
       saleProcTextEl.innerHTML = 'Order was read, but saving it failed.<br><span style="color:#f87171; font-size:11px;">' + (err.message || err) + '</span>';
       var retryBtn = document.createElement('button');
@@ -899,7 +897,7 @@ function runExtraction(day, repSlug, entryId, payload){
         retryBtn.remove();
         saleProcTextEl.innerHTML = 'Saving\u2026';
         db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
-          showReadyView(day, repSlug, entryId, fields);
+          syncThenShowReady(day, repSlug, entryId, fields);
         }).catch(function(err2){
           saleProcTextEl.innerHTML = 'Still failing.<br><span style="color:#f87171; font-size:11px;">' + (err2.message || err2) + '</span>';
           saleProcessingViewEl.appendChild(retryBtn);
@@ -918,27 +916,25 @@ function runExtraction(day, repSlug, entryId, payload){
   });
 }
 
-var _saleGate = null; // tracks the two conditions that must both be true before "complete"
+function syncThenShowReady(day, repSlug, entryId, fields){
+  showSaleView('processing');
+  restoreProcessingViewMarkup();
+  saleProcTextEl.innerHTML = 'Syncing to sheet\u2026';
+  syncToSheetOnce(day, repSlug, entryId, fields).then(function(ok){
+    showReadyView(day, repSlug, entryId, fields, ok);
+  });
+}
 
-function showReadyView(day, repSlug, entryId, fields){
+function showReadyView(day, repSlug, entryId, fields, syncOk){
   showSaleView('ready');
   saleReadyNameEl.textContent = fields.customerName || '(name not read)';
   saleReadySubEl.textContent = fields.phone ? formatPhoneDisplay(fields.phone) : '(no phone read)';
-  saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
-
-  _saleGate = { textSent: false, syncDone: false, syncOk: null, fields: fields };
+  saleSyncNoteEl.textContent = syncOk ? 'Synced to sheet \u2713' : 'Sheet sync had trouble \u2014 will retry from Sales Review';
 
   saleSendTextBtn.onclick = function(){
     sendConfirmationText(fields);
-    _saleGate.textSent = true;
-    checkGate();
+    showCompleteState(syncOk ? 'done' : 'saved-not-synced', fields);
   };
-
-  syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
-    _saleGate.syncDone = true;
-    _saleGate.syncOk = ok;
-    checkGate();
-  });
 }
 
 function formatPhoneDisplay(p){
@@ -947,51 +943,21 @@ function formatPhoneDisplay(p){
   return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
 }
 
-function checkGate(){
-  if (!_saleGate) return;
-
-  if (!_saleGate.textSent){
-    // Text not sent yet \u2014 just keep the small sync note updated, stay on the ready screen
-    saleSyncNoteEl.textContent = _saleGate.syncDone
-      ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
-      : 'Syncing to sheet\u2026';
-    return;
-  }
-
-  if (!_saleGate.syncDone){
-    showCompleteState('finishing');
-    return;
-  }
-
-  if (_saleGate.syncOk){
-    showCompleteState('done');
-  } else {
-    showCompleteState('saved-not-synced');
-  }
-}
-
-function showCompleteState(state){
+function showCompleteState(state, fields){
   showSaleView('complete');
-  var name = (_saleGate && _saleGate.fields && _saleGate.fields.customerName) || 'This deal';
-  if (state === 'finishing'){
-    saleCompleteIconEl.className = 'sale-complete-check ok';
-    saleCompleteIconEl.textContent = '\u22ef';
-    saleCompleteTitleEl.textContent = 'Wrapping up\u2026';
-    saleCompleteSubEl.textContent = 'Just finishing the sheet sync \u2014 one second.';
-    saleCompleteDoneBtn.style.display = 'none';
-  } else if (state === 'done'){
+  var name = (fields && fields.customerName) || 'This deal';
+  if (state === 'done'){
     saleCompleteIconEl.className = 'sale-complete-check ok';
     saleCompleteIconEl.textContent = '\u2713';
     saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
     saleCompleteSubEl.textContent = name + ' is texted, saved, and synced. Deal info is on your clipboard.';
-    saleCompleteDoneBtn.style.display = '';
   } else {
     saleCompleteIconEl.className = 'sale-complete-check warn';
     saleCompleteIconEl.textContent = '\u2713';
     saleCompleteTitleEl.textContent = 'Text sent, saved \u2014 and copied.';
     saleCompleteSubEl.textContent = name + '\u2019s info is on your clipboard. Sheet sync had trouble and will keep retrying on its own \u2014 nothing you need to do.';
-    saleCompleteDoneBtn.style.display = '';
   }
+  saleCompleteDoneBtn.style.display = '';
 }
 
 bindTap(saleCompleteDoneBtn, function(){ closeSaleModal(); });
@@ -1081,22 +1047,23 @@ function sendConfirmationText(fields){
   window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(body);
 }
 
-function syncToSheet(day, repSlug, entryId, fields, attempt){
+// One attempt only \u2014 no retry loop here. If it fails, Sales Review's
+// "Retry all failed" (which the rep doesn't need to be present for) handles
+// it from there. Resolves true/false once this single try is done.
+function syncToSheetOnce(day, repSlug, entryId, fields){
   return fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'content-type': 'text/plain' }, // avoids a CORS preflight against Apps Script
     body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: Object.assign({}, fields, { entryId: entryId }) })
   }).then(function(r){ return r.json(); }).then(function(res){
     if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
-    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
+    return db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
+  }).then(function(){
     return true;
-  }).catch(function(err){
-    if (attempt < 2){
-      return new Promise(function(resolve){ setTimeout(resolve, 2000); })
-        .then(function(){ return syncToSheet(day, repSlug, entryId, fields, attempt + 1); });
-    }
-    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false);
-    return false;
+  }).catch(function(){
+    return db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false).then(function(){
+      return false;
+    });
   });
 }
 
