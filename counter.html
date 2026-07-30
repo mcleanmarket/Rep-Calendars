@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v59 -->
+  <!-- counter-v62 — adds timeouts (8s per sheet-sync attempt, 10s per database write) so neither can hang indefinitely, plus double-tap protection on the three buttons that get their handler reassigned per-sale -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -11,22 +11,16 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body { font-family: 'DM Sans', sans-serif; background: #0f0f0f; color: #f0f0f0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; touch-action: manipulation; }
-
-    /* Header */
     .hdr { background: #0a0a0a; border-bottom: 1px solid #1e1e1e; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; flex-shrink: 0; }
     .logo-img { height: 26px; width: auto; display: block; }
     .hdr-right { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; margin-left: 10px; }
     .hdr-date { font-size: 11px; color: #444; font-family: 'DM Mono', monospace; }
-
-    /* Chart section */
     .chart-section { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 16px 8px; }
     .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
     .chart-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; }
     .legend { display: flex; gap: 12px; }
     .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #666; }
     .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
-
-    /* Funnel leaderboard (Doors -> Convos -> Sales stacked per rep) */
     .chart-area { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 13px; padding: 4px 0; overflow: hidden; }
     .rep-block { display: flex; align-items: center; gap: 10px; }
     .rep-block.me .rep-label .nm { color: #fff; font-weight: 800; font-size: 13px; }
@@ -42,19 +36,14 @@
     .sb-sales  { background: #4ade80; }
     .stack-pct { font-size: 9px; font-family: 'DM Mono', monospace; color: #f0f0f0; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
     .no-data { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #333; }
-
-    /* Divider */
     .divider { height: 1px; background: #1e1e1e; flex-shrink: 0; position: relative; margin: 0 0 4px; }
     .divider span { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: #0f0f0f; padding: 0 10px; font-size: 10px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
-
-    /* Stacked counters */
     .cnt-section { flex-shrink: 0; padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 9px; }
     .cnt-row { display: flex; align-items: center; gap: 14px; height: 74px; padding: 0 16px; border-radius: 16px; background: #1a1a1a; border: 1px solid #2a2a2a; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; transition: transform 0.06s ease, background 0.06s ease, border-color 0.06s ease; touch-action: manipulation; }
     .cnt-row:active { transform: scale(0.98); }
     .cnt-doors:active   { background: #241c0c; border-color: #F5A31A; }
     .cnt-engaged:active { background: #0f1a2e; border-color: #60a5fa; }
     .cnt-sales:active   { background: #0f2418; border-color: #4ade80; }
-    /* JS-driven press animation (reliable on iOS, unlike :active) */
     .cnt-doors.tapped   { animation: tapDoors 0.18s ease; }
     .cnt-engaged.tapped { animation: tapEng   0.18s ease; }
     .cnt-sales.tapped   { animation: tapSale  0.18s ease; }
@@ -74,20 +63,13 @@
     @keyframes popNum { 0% { transform: scale(1); } 40% { transform: scale(1.24); } 100% { transform: scale(1); } }
     .cnt-sub { flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #2a2a2a; background: #141414; border-radius: 12px; color: #666; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; transition: transform 0.06s ease, background 0.06s ease; touch-action: manipulation; }
     .cnt-sub:active { color: #ccc; background: #222; transform: scale(0.88); }
-
     .status { text-align: center; font-size: 10px; color: #333; font-family: 'DM Mono', monospace; margin-top: 4px; }
     .status.ok  { color: #4ade80; }
     .status.err { color: #ef4444; }
-
-    /* Promo codes (inline in header, muted gray like counter buttons) */
     .promo-btn { background: #1a1a1a; border: 1px solid #2a2a2a; color: #999; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; padding: 5px 7px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     .promo-btn:active { background: #2a2a2a; color: #ccc; }
-    /* 20 & 30 = clear choices: wider + brighter */
     #promo20, #promo30 { flex: 1; padding: 6px 16px; color: #cfcfcf; }
-    /* 40 = de-emphasized */
     #promo40 { padding: 4px 7px; font-size: 9px; color: #5a5a5a; border-color: #232323; }
-
-    /* 40-off warning */
     .overlay40 { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 800; display: none; align-items: center; justify-content: center; padding: 24px; }
     .overlay40.open { display: flex; }
     .warn-box { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 22px 20px; width: 300px; max-width: 100%; text-align: center; }
@@ -95,8 +77,6 @@
     .warn-text { font-size: 12px; color: #999; line-height: 1.6; margin-bottom: 18px; }
     .warn-confirm { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #F5A31A; color: #241900; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; touch-action: manipulation; }
     .warn-cancel { display: block; margin-top: 12px; font-size: 12px; color: #666; cursor: pointer; }
-
-    /* Sale capture modal (submit-required, no cancel) */
     .overlaySale { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 850; display: none; align-items: center; justify-content: center; padding: 16px; }
     .overlaySale.open { display: flex; }
     .sale-box { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 20px 18px 28px; width: 340px; max-width: 100%; max-height: 88dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -117,8 +97,6 @@
     .sale-mode-link { display: block; width: 100%; text-align: center; font-size: 13px; color: #60a5fa; font-weight: 700; padding: 13px; margin: 10px 0 16px; background: #333; border: 1px solid #444; border-radius: 10px; cursor: pointer; touch-action: manipulation; }
     .sale-input { width: 100%; background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; color: #f0f0f0; font-size: 16px; font-family: 'DM Sans', sans-serif; padding: 12px; margin-bottom: 14px; }
     select.sale-input { appearance: none; -webkit-appearance: none; }
-
-    /* Post-submit: processing + ready-to-text states */
     .sale-spin { width: 26px; height: 26px; border: 3px solid #2a2a2a; border-top-color: #4ade80; border-radius: 50%; margin: 6px auto 16px; animation: saleSpin .8s linear infinite; }
     @keyframes saleSpin { to { transform: rotate(360deg); } }
     .sale-proc-text { text-align: center; font-size: 13px; color: #999; }
@@ -132,8 +110,6 @@
     .sale-complete-check.warn { background: #2e1400; color: #F5A31A; }
     .sale-complete-title { text-align: center; font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 8px; }
     .sale-complete-sub { text-align: center; font-size: 12.5px; color: #999; line-height: 1.6; margin-bottom: 20px; }
-
-    /* Toast */
     .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(20px); background: #fff; color: #111; padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; z-index: 900; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
@@ -197,7 +173,6 @@
   </div>
 </div>
 
-<!-- Sale capture: must submit (photo or pasted text) to close. No cancel. -->
 <div class="overlaySale" id="overlaySale">
   <div class="sale-box">
 
@@ -309,11 +284,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="/reps.js"></script>
 <script>
-// REPS and ORDER now come from /reps.js (loaded via <script> tag above this one)
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var FULL_UNITS = 50; // total across all segments that fills the bar to full width
-var MIN_SEG    = 32; // min px per segment so its number always shows
+var FULL_UNITS = 50;
+var MIN_SEG    = 32;
 
 var parts = window.location.pathname.split('/').filter(Boolean);
 var slug  = (parts[1] || 'logan').toLowerCase();
@@ -322,7 +296,6 @@ var repFirst = REPS[slug].split(' ')[0];
 
 document.getElementById('my-label').textContent  = repFirst + "'s Counter";
 
-// Logo doubles as a toggle to Sales Review \u2014 Logan only, everyone else's stays inert
 if (slug === 'logan') {
   var logoImgEl = document.getElementById('logoImg');
   logoImgEl.style.cursor = 'pointer';
@@ -331,20 +304,19 @@ if (slug === 'logan') {
 var now = new Date();
 document.getElementById('hdr-date').textContent   = DN[now.getDay()] + ' ' + MN[now.getMonth()] + ' ' + now.getDate();
 
-/* ── Feedback: haptic + number pop (no sound) ────────────── */
 function haptic(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
 function popNum(field) {
   var el = document.getElementById('cnt-' + field);
   if (!el) return;
   el.classList.remove('pop');
-  void el.offsetWidth; // reflow so the animation restarts on rapid taps
+  void el.offsetWidth;
   el.classList.add('pop');
 }
 function pressRow(field) {
   var el = document.getElementById('row-' + field);
   if (!el) return;
   el.classList.remove('tapped');
-  void el.offsetWidth; // reflow so the animation restarts on rapid taps
+  void el.offsetWidth;
   el.classList.add('tapped');
 }
 
@@ -360,7 +332,35 @@ firebase.initializeApp({
 var db      = firebase.database();
 var storage = firebase.storage();
 
-// Same standardization table as sales-review.html \u2014 keep both in sync if this ever changes
+// Guards against a request that never resolves at all (not an error, just
+// silently hangs \u2014 happens on some flaky mobile connections). Without this,
+// a hung request never triggers retry logic or a "Try Again" button, since
+// nothing ever rejects.
+function fetchWithTimeout(url, opts, ms){
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, ms);
+  return fetch(url, Object.assign({}, opts, { signal: controller.signal }))
+    .finally(function(){ clearTimeout(timer); });
+}
+function withTimeout(promise, ms, label){
+  return new Promise(function(resolve, reject){
+    var timer = setTimeout(function(){ reject(new Error((label || 'Request') + ' timed out')); }, ms);
+    promise.then(function(v){ clearTimeout(timer); resolve(v); }, function(err){ clearTimeout(timer); reject(err); });
+  });
+}
+// A handler assigned fresh per-sale (via .onclick =) can't safely use bindTap
+// (that would stack a new listener on every sale). This gives the same
+// double-tap protection without accumulating listeners.
+function debounceTap(fn){
+  var last = 0;
+  return function(e){
+    var now = Date.now();
+    if (now - last < 700) return;
+    last = now;
+    fn(e);
+  };
+}
+
 var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 750:80, 1000:80 };
 var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
 function standardizePlan(rawPlan){
@@ -368,8 +368,6 @@ function standardizePlan(rawPlan){
   var speedMatch = rawPlan.match(/(\d{2,4})/);
   if (!speedMatch) return { plan: rawPlan, price:'' };
   var speed = parseInt(speedMatch[1], 10);
-  // Check "fiber" FIRST \u2014 real Fiber plans are named "FiberNEXT500" etc, so
-  // they also contain "next" and would be misclassified if checked second.
   var isFiber = /fiber/i.test(rawPlan);
   if (isFiber){
     var pf = FIBER_PRICES[speed];
@@ -380,9 +378,8 @@ function standardizePlan(rawPlan){
   }
 }
 
-// Your existing deployed Apps Script Web App \u2014 needs a new 'appendSale' action added (see chat)
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRtaW6dBF8JHdUhnTBvpLBUUC9Gedw-4jeDEkgBuKv_M_t-kojomJY61Yo9RrHQbE3/exec';
-var APPEND_SECRET = 'nextlink-motion-9f2k7q'; // must match APPEND_SECRET in Code.gs exactly
+var APPEND_SECRET = 'nextlink-motion-9f2k7q';
 
 var _local = { doors:0, engaged:0, sales:0 };
 var _data  = {};
@@ -417,7 +414,7 @@ function increment(field) {
   db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) d = { doors:0, engaged:0, sales:0, firstDoor:null };
     d[field] = (d[field]||0) + 1;
-    if (field === 'doors' && d.doors === 1) d.firstDoor = Date.now(); // fresh stamp each 0->1
+    if (field === 'doors' && d.doors === 1) d.firstDoor = Date.now();
     return d;
   });
 }
@@ -431,7 +428,7 @@ function decrement(field) {
   db.ref('counters/'+todayKey()+'/'+slug).transaction(function(d) {
     if (!d) return d;
     d[field] = Math.max(0, (d[field]||0) - 1);
-    if (field === 'doors' && d.doors === 0) d.firstDoor = null; // clear stamp at zero
+    if (field === 'doors' && d.doors === 0) d.firstDoor = null;
     return d;
   });
 }
@@ -444,13 +441,12 @@ function updateMyDisplay() {
 
 function fmtTime(ms) {
   if (!ms) return '';
-  // Always render in Central Time, regardless of the rep's device timezone
   var parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true
   }).formatToParts(new Date(ms));
   var o = {};
   parts.forEach(function(p) { o[p.type] = p.value; });
-  var ap = (o.dayPeriod || '').toLowerCase().charAt(0); // 'a' or 'p'
+  var ap = (o.dayPeriod || '').toLowerCase().charAt(0);
   return o.hour + ':' + o.minute + ap;
 }
 
@@ -466,10 +462,8 @@ function renderChart() {
     return;
   }
 
-  // Sort by doors, descending
   active.sort(function(a,b){ return ((_data[b]||{}).doors||0) - ((_data[a]||{}).doors||0); });
 
-  // All three bars share ONE scale: full width at FULL_UNITS, capped after that
   function barW(n) { return Math.min(100, n / FULL_UNITS * 100); }
 
   area.innerHTML = active.map(function(s) {
@@ -479,9 +473,8 @@ function renderChart() {
     var doors  = d.doors   || 0;
     var convos = d.engaged || 0;
     var sales  = d.sales   || 0;
-    // Step-down conversion rates (what % carried to the next stage)
-    var convPct = doors  > 0 ? Math.round(convos / doors  * 100) : null; // convos per door
-    var salePct = convos > 0 ? Math.round(sales  / convos * 100) : null; // sales per convo
+    var convPct = doors  > 0 ? Math.round(convos / doors  * 100) : null;
+    var salePct = convos > 0 ? Math.round(sales  / convos * 100) : null;
 
     function bar(cls, count, pct) {
       return '<div class="stack-row">'
@@ -490,7 +483,6 @@ function renderChart() {
       + '</div>';
     }
 
-    // Only show a bar once it has at least 1
     var rows = '';
     if (sales  > 0) rows += bar('sb-sales',  sales,  salePct);
     if (convos > 0) rows += bar('sb-convos', convos, convPct);
@@ -505,7 +497,6 @@ function renderChart() {
   }).join('');
 }
 
-/* ── One clean action per tap (prevents iOS ghost-click double-fire) ── */
 function bindTap(el, fn, stop) {
   if (!el) return;
   var last = 0;
@@ -516,12 +507,9 @@ function bindTap(el, fn, stop) {
   bindTap(document.getElementById('row-' + fld), function() { increment(fld); });
   bindTap(document.getElementById('sub-' + fld), function() { decrement(fld); }, true);
 });
-// Sales row opens the capture modal instead of incrementing directly.
-// Counter only goes up once a screenshot/text is successfully submitted.
 bindTap(document.getElementById('row-sales'), function() { openSaleModal(); });
 bindTap(document.getElementById('sub-sales'), function() { decrement('sales'); }, true);
 
-/* ── Sale capture modal ──────────────────────────────────── */
 var saleFileBtnEl = document.getElementById('saleFileBtn');
 var saleFileInput = document.getElementById('saleFile');
 var salePreviewEl = document.getElementById('salePreview');
@@ -547,7 +535,7 @@ saleFileInput.addEventListener('change', function(e) {
     salePreviewWrapEl.classList.add('show');
     saleFileBtnEl.style.display = 'none';
     salePasteSectionEl.style.display = 'none';
-    saleTextEl.value = ''; // screenshot and pasted text are mutually exclusive
+    saleTextEl.value = '';
     refreshSaleSubmit();
     salePreviewEl.onload = function() {
       requestAnimationFrame(function() {
@@ -637,7 +625,7 @@ bindTap(document.getElementById('manSubmit'), function(){
   var rawPayload = { type: 'manual', text: summary, notes: notes || null, ts: Date.now(), rep: REPS[slug] };
   var ref = db.ref('salesLog/' + day + '/' + slug).push();
 
-  ref.set(rawPayload).then(function(){
+  withTimeout(ref.set(rawPayload), 10000, 'Save').then(function(){
     increment('sales');
     var fields = {
       dateSold: day,
@@ -655,9 +643,9 @@ bindTap(document.getElementById('manSubmit'), function(){
       notes: notes,
       status: installDate ? 'Scheduled' : 'Pending'
     };
-    return db.ref('salesLog/' + day + '/' + slug + '/' + ref.key + '/processed').set(fields).then(function(){
+    return withTimeout(db.ref('salesLog/' + day + '/' + slug + '/' + ref.key + '/processed').set(fields), 10000, 'Save').then(function(){
       resetManualForm();
-      syncThenShowReady(day, slug, ref.key, fields);
+      showReadyView(day, slug, ref.key, fields);
     });
   }).catch(function(err){
     statusMsgEl.textContent = 'Save failed \u2014 try again.';
@@ -682,6 +670,7 @@ function resetSaleModal() {
   saleSubmitBtn.textContent = 'Submit Sale';
   var retryBtn = saleProcessingViewEl.querySelector('.sale-text-btn');
   if (retryBtn) retryBtn.remove();
+  _saleGate = null;
   resetManualForm();
   showSaleView('capture');
 }
@@ -733,7 +722,7 @@ function writeSaleLog(payload) {
   payload.rep = REPS[slug];
   var day = todayKey();
   var ref = db.ref('salesLog/' + day + '/' + slug).push();
-  ref.set(payload).then(function() {
+  withTimeout(ref.set(payload), 10000, 'Save').then(function() {
     increment('sales');
     goToProcessing(day, slug, ref.key, payload);
   }).catch(function(err) {
@@ -748,7 +737,6 @@ function saleFail(msg) {
   saleSubmitBtn.textContent = 'Try Again';
 }
 
-/* ── Post-submit: live extraction, then Send Confirmation Text ───── */
 var saleCaptureViewEl    = document.getElementById('saleCaptureView');
 var saleProcessingViewEl = document.getElementById('saleProcessingView');
 var saleProcTextEl       = document.getElementById('saleProcText');
@@ -798,7 +786,7 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
     '<button class="sale-text-btn" id="planFixConfirm">Confirm &amp; Continue</button>' +
     '</div>';
 
-  document.getElementById('planFixConfirm').onclick = function(){
+  document.getElementById('planFixConfirm').onclick = debounceTap(function(){
     var chosen = document.getElementById('planFixSelect').value;
     if (!chosen){ return; }
     var std2 = standardizePlan(chosen);
@@ -820,12 +808,13 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
       status: parsed.install_date ? 'Scheduled' : 'Pending'
     };
 
-    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
-      syncThenShowReady(day, repSlug, entryId, fields);
+    withTimeout(db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields), 10000, 'Save').then(function(){
+      restoreProcessingViewMarkup();
+      showReadyView(day, repSlug, entryId, fields);
     }).catch(function(){
       toast('Save failed \u2014 try again');
     });
-  };
+  });
 }
 
 function escapeHtmlSale(s){
@@ -885,24 +874,24 @@ function runExtraction(day, repSlug, entryId, payload){
       status: parsed.install_date ? 'Scheduled' : 'Pending'
     };
 
-    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
-      syncThenShowReady(day, repSlug, entryId, fields);
+    withTimeout(db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields), 10000, 'Save').then(function(){
+      showReadyView(day, repSlug, entryId, fields);
     }).catch(function(err){
       saleProcTextEl.innerHTML = 'Order was read, but saving it failed.<br><span style="color:#f87171; font-size:11px;">' + (err.message || err) + '</span>';
       var retryBtn = document.createElement('button');
       retryBtn.className = 'sale-text-btn';
       retryBtn.style.marginTop = '16px';
       retryBtn.textContent = 'Try Again';
-      retryBtn.onclick = function(){
+      retryBtn.onclick = debounceTap(function(){
         retryBtn.remove();
         saleProcTextEl.innerHTML = 'Saving\u2026';
-        db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields).then(function(){
-          syncThenShowReady(day, repSlug, entryId, fields);
+        withTimeout(db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed').set(fields), 10000, 'Save').then(function(){
+          showReadyView(day, repSlug, entryId, fields);
         }).catch(function(err2){
           saleProcTextEl.innerHTML = 'Still failing.<br><span style="color:#f87171; font-size:11px;">' + (err2.message || err2) + '</span>';
           saleProcessingViewEl.appendChild(retryBtn);
         });
-      };
+      });
       saleProcessingViewEl.appendChild(retryBtn);
     });
   }).catch(function(err){
@@ -911,30 +900,32 @@ function runExtraction(day, repSlug, entryId, payload){
     retryBtn.className = 'sale-text-btn';
     retryBtn.style.marginTop = '16px';
     retryBtn.textContent = 'Try Again';
-    retryBtn.onclick = function(){ retryBtn.remove(); goToProcessing(day, repSlug, entryId, payload); };
+    retryBtn.onclick = debounceTap(function(){ retryBtn.remove(); goToProcessing(day, repSlug, entryId, payload); });
     saleProcessingViewEl.appendChild(retryBtn);
   });
 }
 
-function syncThenShowReady(day, repSlug, entryId, fields){
-  showSaleView('processing');
-  restoreProcessingViewMarkup();
-  saleProcTextEl.innerHTML = 'Syncing to sheet\u2026';
-  syncToSheetOnce(day, repSlug, entryId, fields).then(function(ok){
-    showReadyView(day, repSlug, entryId, fields, ok);
-  });
-}
+var _saleGate = null;
 
-function showReadyView(day, repSlug, entryId, fields, syncOk){
+function showReadyView(day, repSlug, entryId, fields){
   showSaleView('ready');
   saleReadyNameEl.textContent = fields.customerName || '(name not read)';
   saleReadySubEl.textContent = fields.phone ? formatPhoneDisplay(fields.phone) : '(no phone read)';
-  saleSyncNoteEl.textContent = syncOk ? 'Synced to sheet \u2713' : 'Sheet sync had trouble \u2014 will retry from Sales Review';
+  saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
 
-  saleSendTextBtn.onclick = function(){
+  _saleGate = { textSent: false, syncDone: false, syncOk: null, fields: fields };
+
+  saleSendTextBtn.onclick = debounceTap(function(){
     sendConfirmationText(fields);
-    showCompleteState(syncOk ? 'done' : 'saved-not-synced', fields);
-  };
+    _saleGate.textSent = true;
+    checkGate();
+  });
+
+  syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
+    _saleGate.syncDone = true;
+    _saleGate.syncOk = ok;
+    checkGate();
+  });
 }
 
 function formatPhoneDisplay(p){
@@ -943,21 +934,50 @@ function formatPhoneDisplay(p){
   return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
 }
 
-function showCompleteState(state, fields){
+function checkGate(){
+  if (!_saleGate) return;
+
+  if (!_saleGate.textSent){
+    saleSyncNoteEl.textContent = _saleGate.syncDone
+      ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
+      : 'Syncing to sheet\u2026';
+    return;
+  }
+
+  if (!_saleGate.syncDone){
+    showCompleteState('finishing');
+    return;
+  }
+
+  if (_saleGate.syncOk){
+    showCompleteState('done');
+  } else {
+    showCompleteState('saved-not-synced');
+  }
+}
+
+function showCompleteState(state){
   showSaleView('complete');
-  var name = (fields && fields.customerName) || 'This deal';
-  if (state === 'done'){
+  var name = (_saleGate && _saleGate.fields && _saleGate.fields.customerName) || 'This deal';
+  if (state === 'finishing'){
+    saleCompleteIconEl.className = 'sale-complete-check ok';
+    saleCompleteIconEl.textContent = '\u22ef';
+    saleCompleteTitleEl.textContent = 'Wrapping up\u2026';
+    saleCompleteSubEl.textContent = 'Just finishing the sheet sync \u2014 one second.';
+    saleCompleteDoneBtn.style.display = 'none';
+  } else if (state === 'done'){
     saleCompleteIconEl.className = 'sale-complete-check ok';
     saleCompleteIconEl.textContent = '\u2713';
     saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
     saleCompleteSubEl.textContent = name + ' is texted, saved, and synced. Deal info is on your clipboard.';
+    saleCompleteDoneBtn.style.display = '';
   } else {
     saleCompleteIconEl.className = 'sale-complete-check warn';
     saleCompleteIconEl.textContent = '\u2713';
     saleCompleteTitleEl.textContent = 'Text sent, saved \u2014 and copied.';
     saleCompleteSubEl.textContent = name + '\u2019s info is on your clipboard. Sheet sync had trouble and will keep retrying on its own \u2014 nothing you need to do.';
+    saleCompleteDoneBtn.style.display = '';
   }
-  saleCompleteDoneBtn.style.display = '';
 }
 
 bindTap(saleCompleteDoneBtn, function(){ closeSaleModal(); });
@@ -974,12 +994,9 @@ function formatConfirmDate(iso){
 function formatWindow(raw){
   if (!raw) return '';
   var upper = raw.toUpperCase();
-  // Always normalize to one of exactly two fixed slots \u2014 morning starts with
-  // AM, afternoon starts with PM \u2014 regardless of how the screenshot itself
-  // writes it (e.g. some show "12 PM-5 PM" instead of "1 PM-5 PM").
   if (upper.indexOf('AM') !== -1) return '8am-12pm';
   if (upper.indexOf('PM') !== -1) return '1pm-5pm';
-  return raw.replace(/\s+/g, '').toLowerCase(); // fallback for anything unrecognized
+  return raw.replace(/\s+/g, '').toLowerCase();
 }
 
 function buildClipboardText(fields){
@@ -1047,27 +1064,25 @@ function sendConfirmationText(fields){
   window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(body);
 }
 
-// One attempt only \u2014 no retry loop here. If it fails, Sales Review's
-// "Retry all failed" (which the rep doesn't need to be present for) handles
-// it from there. Resolves true/false once this single try is done.
-function syncToSheetOnce(day, repSlug, entryId, fields){
-  return fetch(APPS_SCRIPT_URL, {
+function syncToSheet(day, repSlug, entryId, fields, attempt){
+  return fetchWithTimeout(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'content-type': 'text/plain' }, // avoids a CORS preflight against Apps Script
+    headers: { 'content-type': 'text/plain' },
     body: JSON.stringify({ action: 'appendSale', secret: APPEND_SECRET, data: Object.assign({}, fields, { entryId: entryId }) })
-  }).then(function(r){ return r.json(); }).then(function(res){
+  }, 8000).then(function(r){ return r.json(); }).then(function(res){
     if (!res || res.ok !== true) throw new Error('sheet push not confirmed');
-    return db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
-  }).then(function(){
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(true);
     return true;
-  }).catch(function(){
-    return db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false).then(function(){
-      return false;
-    });
+  }).catch(function(err){
+    if (attempt < 2){
+      return new Promise(function(resolve){ setTimeout(resolve, 2000); })
+        .then(function(){ return syncToSheet(day, repSlug, entryId, fields, attempt + 1); });
+    }
+    db.ref('salesLog/' + day + '/' + repSlug + '/' + entryId + '/processed/syncedToSheet').set(false);
+    return false;
   });
 }
 
-/* ── Promo codes ─────────────────────────────────────────── */
 var CODES = { '20': 'BORRJWUI', '30': 'FBWXFIIO', '40': 'XLSCAQPQ' };
 var _toastT;
 function toast(msg) {
