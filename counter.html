@@ -280,7 +280,7 @@
 <div class="toast" id="toast"></div>
 
 <div id="authGate" style="position:fixed; inset:0; background:#0f0f0f; z-index:999; display:flex; align-items:center; justify-content:center; padding:24px;">
-  <div style="width:280px; max-width:100%;">
+  <div id="authGateInner" style="width:280px; max-width:100%; display:none;">
     <img src="/motion-logo-nobackground.png" alt="Motion" style="height:32px; width:auto; display:block; margin:0 auto 28px;">
     <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#f5f5f5; margin-bottom:8px; text-align:center;">Team Password</div>
     <input type="password" id="authPassInput" placeholder="Enter password" style="width:100%; background:#141414; border:1px solid #2a2a2a; border-radius:10px; color:#f0f0f0; font-size:16px; font-family:'DM Sans',sans-serif; padding:14px; margin-bottom:12px; text-align:center;">
@@ -347,14 +347,20 @@ var storage = firebase.storage();
 // just Firebase's required account identifier. The actual secret is the
 // password, set once in Firebase Console and never stored in this file.
 var AUTH_EMAIL = 'reps@motionmarketing.internal';
-var authGateEl     = document.getElementById('authGate');
+var authGateEl      = document.getElementById('authGate');
+var authGateInnerEl = document.getElementById('authGateInner');
 var authPassInput  = document.getElementById('authPassInput');
 var authSubmitBtn  = document.getElementById('authSubmitBtn');
 var authErrorEl    = document.getElementById('authErrorEl');
 
 firebase.auth().onAuthStateChanged(function(user){
-  authGateEl.style.display = user ? 'none' : 'flex';
-  if (user) authPassInput.value = '';
+  if (user) {
+    authGateEl.style.display = 'none';
+    authPassInput.value = '';
+  } else {
+    authGateEl.style.display = 'flex';
+    authGateInnerEl.style.display = 'block'; // only reveal the form once we're sure login is actually needed
+  }
 });
 
 function attemptSignIn(){
