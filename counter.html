@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v62 — adds timeouts (8s per sheet-sync attempt, 10s per database write) so neither can hang indefinitely, plus double-tap protection on the three buttons that get their handler reassigned per-sale -->
+  <!-- counter-v63 — adds a one-time shared-password gate before any Firebase access, closing the "insecure rules" warning without adding per-rep logins -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -279,9 +279,20 @@
 
 <div class="toast" id="toast"></div>
 
+<div id="authGate" style="position:fixed; inset:0; background:#0f0f0f; z-index:999; display:flex; align-items:center; justify-content:center; padding:24px;">
+  <div style="width:280px; max-width:100%;">
+    <img src="/motion-logo-nobackground.png" alt="Motion" style="height:32px; width:auto; display:block; margin:0 auto 28px;">
+    <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#f5f5f5; margin-bottom:8px; text-align:center;">Team Password</div>
+    <input type="password" id="authPassInput" placeholder="Enter password" style="width:100%; background:#141414; border:1px solid #2a2a2a; border-radius:10px; color:#f0f0f0; font-size:16px; font-family:'DM Sans',sans-serif; padding:14px; margin-bottom:12px; text-align:center;">
+    <button id="authSubmitBtn" style="width:100%; padding:14px; border:none; border-radius:10px; background:#4ade80; color:#0a2412; font-size:14px; font-weight:800; cursor:pointer; touch-action:manipulation;">Unlock</button>
+    <div id="authErrorEl" style="text-align:center; font-size:12px; color:#ef4444; font-weight:700; margin-top:12px; min-height:16px;"></div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="/reps.js"></script>
 <script>
 var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -331,6 +342,36 @@ firebase.initializeApp({
 });
 var db      = firebase.database();
 var storage = firebase.storage();
+
+// One shared login for the whole team \u2014 the email below isn't secret, it's
+// just Firebase's required account identifier. The actual secret is the
+// password, set once in Firebase Console and never stored in this file.
+var AUTH_EMAIL = 'reps@motionmarketing.internal';
+var authGateEl     = document.getElementById('authGate');
+var authPassInput  = document.getElementById('authPassInput');
+var authSubmitBtn  = document.getElementById('authSubmitBtn');
+var authErrorEl    = document.getElementById('authErrorEl');
+
+firebase.auth().onAuthStateChanged(function(user){
+  authGateEl.style.display = user ? 'none' : 'flex';
+  if (user) authPassInput.value = '';
+});
+
+function attemptSignIn(){
+  var pw = authPassInput.value;
+  if (!pw) return;
+  authSubmitBtn.disabled = true;
+  authSubmitBtn.textContent = 'Checking\u2026';
+  authErrorEl.textContent = '';
+  firebase.auth().signInWithEmailAndPassword(AUTH_EMAIL, pw).catch(function(err){
+    authErrorEl.textContent = 'Wrong password \u2014 try again.';
+    authSubmitBtn.disabled = false;
+    authSubmitBtn.textContent = 'Unlock';
+    authPassInput.select();
+  });
+}
+authSubmitBtn.addEventListener('click', attemptSignIn);
+authPassInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') attemptSignIn(); });
 
 // Guards against a request that never resolves at all (not an error, just
 // silently hangs \u2014 happens on some flaky mobile connections). Without this,
