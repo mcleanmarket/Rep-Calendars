@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v65 — matches the gap above "Paste Screenshot" to the gap below "Submit Sale" (both 10px), and sets Notes to a fixed height matching the Submit Sale button exactly -->
+  <!-- counter-v66 — fixes v65: the base .sale-textarea class has min-height:90px, which was overriding Notes' height:44px (min-height always wins over a smaller height in CSS). Now overrides both. -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -197,7 +197,7 @@
       </div>
 
       <div class="sale-label">Notes <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
-      <textarea class="sale-textarea" id="saleNotes" style="height:44px;" placeholder="Anything worth flagging"></textarea>
+      <textarea class="sale-textarea" id="saleNotes" style="height:44px; min-height:44px;" placeholder="Anything worth flagging"></textarea>
 
       <button class="sale-submit" id="saleSubmit" disabled>Submit Sale</button>
       <span class="sale-mode-link" id="goManualLink">Called this deal in instead? Enter manually</span>
