@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v23 — adds the same one-time shared-password gate as counter.html -->
+<!-- sales-review-v24 — adds Mercury as a fully separate panel: no sync column, no retry logic, since Mercury sales never call syncToSheet at all. Nextlink's own panel (renderSyncedPanel) is untouched. -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -50,9 +50,11 @@
   .btn.danger{background:#2e0e0e;border-color:#5a1a1a;color:#f87171}
   .btn.danger:active{background:#3a1212}
   .synced-panel{background:#0f1a12;border:1px solid #1f3a26;border-radius:12px;padding:14px;margin-bottom:22px}
+  .mercury-panel{background:#0f1420;border:1px solid #1f2c3a;border-radius:12px;padding:14px;margin-bottom:22px}
   .synced-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
   .synced-hd h2{font-size:13px;font-weight:800;color:#e0e0e0}
   .synced-count{font-size:11.5px;color:#7fdba0;font-family:'DM Mono',monospace}
+  .mercury-count{font-size:11.5px;color:#7fb8db;font-family:'DM Mono',monospace}
   .sync-icon{display:inline-block;width:16px;text-align:center}
   .sync-ok{color:#4ade80}
   .sync-pending{color:#666}
@@ -76,11 +78,20 @@
 <div class="wrap">
   <div class="synced-panel">
     <div class="synced-hd">
-      <h2>Today's Processed &amp; Synced Sales</h2>
+      <h2>Nextlink &mdash; Processed &amp; Synced Sales</h2>
       <span class="synced-count" id="syncedCount"></span>
     </div>
-    <div id="syncedWrap"><div class="empty" style="padding:20px 0;">No sales processed yet today.</div></div>
+    <div id="syncedWrap"><div class="empty" style="padding:20px 0;">No Nextlink sales processed yet today.</div></div>
   </div>
+
+  <div class="mercury-panel">
+    <div class="synced-hd">
+      <h2>Mercury &mdash; Processed Sales <span style="color:#666; font-weight:600; font-size:10.5px; text-transform:none;">(database only, no sheet sync)</span></h2>
+      <span class="mercury-count" id="mercuryCount"></span>
+    </div>
+    <div id="mercuryWrap"><div class="empty" style="padding:20px 0;">No Mercury sales processed yet today.</div></div>
+  </div>
+
   <div class="process-panel">
     <button class="btn" id="processDay" style="width:100%; background:#161616; color:#777; border-color:#232323; font-weight:600;">Process this day &rarr; spreadsheet rows <span style="color:#555; font-weight:500;">(rare-case cleanup only)</span></button>
     <div class="process-status" id="processStatus"></div>
@@ -110,8 +121,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="/reps.js"></script>
 <script>
-// REPS and ORDER now come from /reps.js (loaded via <script> tag above this one)
-
 firebase.initializeApp({
   apiKey:            "AIzaSyA8swfoYsvJsU0ugfxFmJTs2almBk7DGVE",
   authDomain:        "motion-marketing-e1e45.firebaseapp.com",
@@ -123,10 +132,9 @@ firebase.initializeApp({
 });
 var db = firebase.database();
 var storage = firebase.storage();
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRtaW6dBF8JHdUhnTBvpLBUUC9Gedw-4jeDEkgBuKv_M_t-kojomJY61Yo9RrHQbE3/exec';
+var APPEND_SECRET = 'nextlink-motion-9f2k7q'; // must match APPEND_SECRET in Code.gs and counter.html exactly
 
-// One shared login for the whole team \u2014 the email below isn't secret, it's
-// just Firebase's required account identifier. The actual secret is the
-// password, set once in Firebase Console and never stored in this file.
 var AUTH_EMAIL = 'reps@motionmarketing.internal';
 var authGateEl      = document.getElementById('authGate');
 var authGateInnerEl = document.getElementById('authGateInner');
@@ -164,8 +172,6 @@ function attemptSignIn(){
 }
 authSubmitBtn.addEventListener('click', attemptSignIn);
 authPassInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') attemptSignIn(); });
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRtaW6dBF8JHdUhnTBvpLBUUC9Gedw-4jeDEkgBuKv_M_t-kojomJY61Yo9RrHQbE3/exec';
-var APPEND_SECRET = 'nextlink-motion-9f2k7q'; // must match APPEND_SECRET in Code.gs and counter.html exactly
 
 function pad(n){ return n < 10 ? '0'+n : ''+n; }
 function todayStr(){
@@ -197,6 +203,7 @@ function loadDay(day){
     _currentData = snap.val() || {};
     render();
     renderSyncedPanel();
+    renderMercuryPanel();
   }, function(){
     document.getElementById('content').innerHTML = '<div class="empty">Couldn\'t load that day.</div>';
   });
@@ -221,7 +228,6 @@ function render(){
     return;
   }
 
-  // Most recent first \u2014 like a live feed, everyone interleaved as they come in
   all.sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
 
   wrap.innerHTML = all.map(function(e){
@@ -269,7 +275,6 @@ function deleteEntry(repSlug, id){
   removeStorage.then(function(){
     return db.ref('salesLog/' + day + '/' + repSlug + '/' + id).remove();
   }).then(function(){
-    // Keep the Sales counter in sync with the actual logged entries
     return db.ref('counters/' + day + '/' + repSlug + '/sales').transaction(function(v){
       return Math.max(0, (v || 0) - 1);
     });
@@ -280,6 +285,8 @@ function deleteEntry(repSlug, id){
     toast('Delete failed \u2014 try again');
   });
 }
+
+/* ── NEXTLINK synced panel — untouched logic (sync column, retry, alert banner) ── */
 function renderSyncedPanel(){
   var cols = ['dateSold','repName','accId','phone','customerName','email','address','plan','price','installDate','notes','status'];
   var heads = ['','Date Sold','Rep Name','Acc ID','Phone','Customer Name','Email','Address','Plan','Price','Install Date','Notes','Status'];
@@ -289,7 +296,7 @@ function renderSyncedPanel(){
     if (!_currentData[s]) return;
     Object.keys(_currentData[s]).forEach(function(id){
       var e = _currentData[s][id];
-      if (e.processed) rows.push({ rep: s, id: id, fields: e.processed });
+      if (e.processed && e.processed.company !== 'mercury') rows.push({ rep: s, id: id, fields: e.processed });
     });
   });
 
@@ -298,7 +305,7 @@ function renderSyncedPanel(){
 
   if (!rows.length){
     countEl.textContent = '';
-    wrap.innerHTML = '<div class="empty" style="padding:20px 0;">No sales processed yet today.</div>';
+    wrap.innerHTML = '<div class="empty" style="padding:20px 0;">No Nextlink sales processed yet today.</div>';
     return;
   }
 
@@ -347,6 +354,59 @@ function renderSyncedPanel(){
   });
 }
 
+/* ── MERCURY panel — brand new, simple table, NO sync column since       ──
+   ── Mercury sales never attempt a sheet sync at all. Read-only display  ──
+   ── plus its own "Copy rows" button in case you ever want to paste      ──
+   ── Mercury sales somewhere manually.                                   ── */
+function renderMercuryPanel(){
+  var cols = ['dateSold','repName','accId','phone','customerName','email','address','plan','price','installDate','notes','status'];
+  var heads = ['Date Sold','Rep Name','Acc ID (Order ID)','Phone','Customer Name','Email','Address','Plan','Price','Install Date','Notes','Status'];
+
+  var rows = [];
+  ORDER.forEach(function(s){
+    if (!_currentData[s]) return;
+    Object.keys(_currentData[s]).forEach(function(id){
+      var e = _currentData[s][id];
+      if (e.processed && e.processed.company === 'mercury') rows.push({ rep: s, id: id, fields: e.processed });
+    });
+  });
+
+  var countEl = document.getElementById('mercuryCount');
+  var wrap = document.getElementById('mercuryWrap');
+
+  if (!rows.length){
+    countEl.textContent = '';
+    wrap.innerHTML = '<div class="empty" style="padding:20px 0;">No Mercury sales processed yet today.</div>';
+    return;
+  }
+
+  rows.sort(function(a,b){ return (a.fields.dateSold||'').localeCompare(b.fields.dateSold||''); });
+  countEl.textContent = rows.length + ' processed';
+
+  var html = '<div class="results-scroll"><table class="results-table"><thead><tr>'
+    + heads.map(function(h){ return '<th>' + h + '</th>'; }).join('')
+    + '</tr></thead><tbody>'
+    + rows.map(function(r){
+        var f = r.fields;
+        return '<tr>' + cols.map(function(c){
+          var cls = (c === 'status') ? ' class="status-' + f[c] + '"' : '';
+          return '<td' + cls + '>' + escapeHtml(f[c] || '') + '</td>';
+        }).join('') + '</tr>';
+      }).join('')
+    + '</tbody></table></div>'
+    + '<button class="btn primary" id="copyMercuryRows" style="margin-top:10px;">Copy rows</button>';
+
+  wrap.innerHTML = html;
+
+  document.getElementById('copyMercuryRows').addEventListener('click', function(){
+    var tsv = rows.map(function(r){
+      return cols.map(function(c){ return String(r.fields[c] || '').replace(/\t/g,' ').replace(/\n/g,' '); }).join('\t');
+    }).join('\n');
+    navigator.clipboard.writeText(tsv).then(function(){ toast('Rows copied'); })
+      .catch(function(){ toast('Copy failed'); });
+  });
+}
+
 function resyncAllFailed(){
   var day = _currentDay;
   var jobs = [];
@@ -360,9 +420,6 @@ function resyncAllFailed(){
   if (!jobs.length) return;
   toast('Retrying ' + jobs.length + ' sale' + (jobs.length > 1 ? 's' : '') + '\u2026');
 
-  // One at a time, with a short gap between each \u2014 firing them all at once
-  // hits Apps Script simultaneously and can cause some to time out waiting
-  // on the script lock even though nothing is actually broken.
   function runNext(i){
     if (i >= jobs.length) return;
     resyncEntry(jobs[i].rep, jobs[i].id, null).then(function(){
@@ -499,9 +556,7 @@ document.getElementById('processDay').addEventListener('click', function(){
   runNext(0);
 });
 
-// Hardcoded plan/price standardization \u2014 the screenshot's own price is never used.
-// STANDARD tier speeds are for "NEXT..." plans (including ones prefixed "FiberNEXT").
-// FIBER tier speeds are for plans named just "Fiber..." with no "NEXT" in the name.
+/* ── NEXTLINK pricing — untouched from before ────────────── */
 var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 750:80, 1000:80 };
 var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
 
@@ -510,8 +565,6 @@ function standardizePlan(rawPlan){
   var speedMatch = rawPlan.match(/(\d{2,4})/);
   if (!speedMatch) return { plan: rawPlan, price:'' };
   var speed = parseInt(speedMatch[1], 10);
-  // Check "fiber" FIRST \u2014 real Fiber plans are named "FiberNEXT500" etc, so
-  // they also contain "next" and would be misclassified if checked second.
   var isFiber = /fiber/i.test(rawPlan);
   if (isFiber){
     var pf = FIBER_PRICES[speed];
@@ -522,8 +575,24 @@ function standardizePlan(rawPlan){
   }
 }
 
+/* ── MERCURY pricing — brand new, flat rate by plan name ──────────── */
+var MERCURY_PRICES = { 'Essential': 35, 'Enhanced': 45 };
+function standardizePlanMercury(rawPlan){
+  if (!rawPlan) return { plan:'', price:'' };
+  if (/enhanced/i.test(rawPlan)) return { plan: 'Enhanced', price: MERCURY_PRICES['Enhanced'] };
+  if (/essential/i.test(rawPlan)) return { plan: 'Essential', price: MERCURY_PRICES['Essential'] };
+  return { plan: rawPlan, price: '' };
+}
+
+/* ── Dispatcher — Nextlink's own standardizePlan() is never modified ── */
+function standardizePlanByCompany(company, rawPlan){
+  if (company === 'mercury') return standardizePlanMercury(rawPlan);
+  return standardizePlan(rawPlan);
+}
+
 function buildRow(day, repSlug, entry, fields, flagged, errMsg){
-  var std = standardizePlan(fields.plan_raw);
+  var company = fields.company === 'mercury' ? 'mercury' : 'nextlink';
+  var std = standardizePlanByCompany(company, fields.plan_raw);
   var flagParts = [];
   if (errMsg) flagParts.push(errMsg);
   if (!flagged && fields.flag) flagParts.push(fields.flag);
@@ -532,6 +601,7 @@ function buildRow(day, repSlug, entry, fields, flagged, errMsg){
   return {
     flagged: flagged,
     errMsg: flagParts.join(' \u2014 '),
+    company: company,
     dateSold: day,
     repName: REPS[repSlug],
     accId: fields.account_number || '',
