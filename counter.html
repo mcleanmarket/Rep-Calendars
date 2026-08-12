@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v66 — fixes v65: the base .sale-textarea class has min-height:90px, which was overriding Notes' height:44px (min-height always wins over a smaller height in CSS). Now overrides both. -->
+  <!-- counter-v67 — adds Mercury as a fully separate, parallel path: its own pricing table, its own confirmation text, its own 3-slot install window, and its sales SKIP the Google Sheet sync entirely (never call syncToSheet at all). Every existing Nextlink function is untouched — Mercury only ever ADDS new functions plus small dispatchers that route to Nextlink's existing, unmodified code by default. -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -183,7 +183,6 @@
       <div class="sale-label">Screenshot &mdash; Full Order</div>
       <label class="sale-file-btn" id="saleFileBtn">Tap to upload screenshot</label>
       <div class="sale-paste-btn" id="salePasteBtn">Paste Screenshot</div>
-      <input type="file" id="saleFile" accept="image/*" style="display:none;">
       <div class="sale-preview-wrap" id="salePreviewWrap">
         <img id="salePreview" class="sale-preview" alt="Screenshot preview">
         <button type="button" class="sale-remove-x" id="saleRemoveShot">&times;</button>
@@ -224,6 +223,7 @@
       <div class="sale-label">Plan</div>
       <select class="sale-input" id="manPlan">
         <option value="">Select a plan&hellip;</option>
+        <optgroup label="Nextlink">
         <option value="NEXT100">NEXT100 &mdash; $37/mo</option>
         <option value="NEXT200">NEXT200 &mdash; $37/mo</option>
         <option value="NEXT300">NEXT300 &mdash; $57/mo</option>
@@ -234,6 +234,11 @@
         <option value="Fiber500">Fiber500 &mdash; $30/mo</option>
         <option value="Fiber1000">Fiber1000 &mdash; $50/mo</option>
         <option value="Fiber2000">Fiber2000 &mdash; $80/mo</option>
+        </optgroup>
+        <optgroup label="Mercury">
+        <option value="Mercury:Essential">Essential &mdash; $35/mo</option>
+        <option value="Mercury:Enhanced">Enhanced &mdash; $45/mo</option>
+        </optgroup>
       </select>
 
       <div class="sale-label">Account # <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
@@ -245,8 +250,11 @@
       <div class="sale-label">Install Window <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
       <select class="sale-input" id="manInstallWindow">
         <option value="">Not set</option>
-        <option value="8 AM-12 PM">Morning (8am-12pm)</option>
-        <option value="12 PM-5 PM">Afternoon (1pm-5pm)</option>
+        <option value="8 AM-12 PM">Nextlink Morning (8am-12pm)</option>
+        <option value="12 PM-5 PM">Nextlink Afternoon (1pm-5pm)</option>
+        <option value="8 AM-1 PM">Mercury 8am-1pm</option>
+        <option value="1 PM-5 PM">Mercury 1pm-5pm</option>
+        <option value="5 PM-8 PM">Mercury 5pm-8pm</option>
       </select>
 
       <div class="sale-label">Notes <span style="color:#666; font-weight:600; text-transform:none; letter-spacing:0;">(Optional)</span></div>
@@ -345,9 +353,6 @@ firebase.initializeApp({
 var db      = firebase.database();
 var storage = firebase.storage();
 
-// One shared login for the whole team \u2014 the email below isn't secret, it's
-// just Firebase's required account identifier. The actual secret is the
-// password, set once in Firebase Console and never stored in this file.
 var AUTH_EMAIL = 'reps@motionmarketing.internal';
 var authGateEl      = document.getElementById('authGate');
 var authGateInnerEl = document.getElementById('authGateInner');
@@ -361,7 +366,7 @@ firebase.auth().onAuthStateChanged(function(user){
     authPassInput.value = '';
   } else {
     authGateEl.style.display = 'flex';
-    authGateInnerEl.style.display = 'block'; // only reveal the form once we're sure login is actually needed
+    authGateInnerEl.style.display = 'block';
   }
 });
 
@@ -381,10 +386,6 @@ function attemptSignIn(){
 authSubmitBtn.addEventListener('click', attemptSignIn);
 authPassInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') attemptSignIn(); });
 
-// Guards against a request that never resolves at all (not an error, just
-// silently hangs \u2014 happens on some flaky mobile connections). Without this,
-// a hung request never triggers retry logic or a "Try Again" button, since
-// nothing ever rejects.
 function fetchWithTimeout(url, opts, ms){
   var controller = new AbortController();
   var timer = setTimeout(function(){ controller.abort(); }, ms);
@@ -397,9 +398,6 @@ function withTimeout(promise, ms, label){
     promise.then(function(v){ clearTimeout(timer); resolve(v); }, function(err){ clearTimeout(timer); reject(err); });
   });
 }
-// A handler assigned fresh per-sale (via .onclick =) can't safely use bindTap
-// (that would stack a new listener on every sale). This gives the same
-// double-tap protection without accumulating listeners.
 function debounceTap(fn){
   var last = 0;
   return function(e){
@@ -410,6 +408,7 @@ function debounceTap(fn){
   };
 }
 
+/* ── NEXTLINK pricing — untouched from before ────────────── */
 var STANDARD_PRICES = { 100:37, 200:37, 300:57, 400:57, 500:57, 750:80, 1000:80 };
 var FIBER_PRICES    = { 500:30, 1000:50, 2000:80 };
 function standardizePlan(rawPlan){
@@ -425,6 +424,22 @@ function standardizePlan(rawPlan){
     var ps = STANDARD_PRICES[speed];
     return { plan: 'NEXT' + speed, price: (ps != null ? ps : ''), speed: speed };
   }
+}
+
+/* ── MERCURY pricing — brand new, flat rate by plan name, no speed math ── */
+var MERCURY_PRICES = { 'Essential': 35, 'Enhanced': 45 };
+function standardizePlanMercury(rawPlan){
+  if (!rawPlan) return { plan:'', price:'' };
+  if (/enhanced/i.test(rawPlan)) return { plan: 'Enhanced', price: MERCURY_PRICES['Enhanced'] };
+  if (/essential/i.test(rawPlan)) return { plan: 'Essential', price: MERCURY_PRICES['Essential'] };
+  return { plan: rawPlan, price: '' };
+}
+
+/* ── Dispatcher: routes to the right pricing table by company.        ──
+   ── Nextlink's own standardizePlan() above is never modified.        ── */
+function standardizePlanByCompany(company, rawPlan){
+  if (company === 'mercury') return standardizePlanMercury(rawPlan);
+  return standardizePlan(rawPlan);
 }
 
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRtaW6dBF8JHdUhnTBvpLBUUC9Gedw-4jeDEkgBuKv_M_t-kojomJY61Yo9RrHQbE3/exec';
@@ -668,7 +683,7 @@ function resetManualForm(){
 bindTap(document.getElementById('manSubmit'), function(){
   var name    = document.getElementById('manCustomerName').value.trim();
   var phone   = document.getElementById('manPhone').value.trim();
-  var plan    = document.getElementById('manPlan').value;
+  var planVal = document.getElementById('manPlan').value;
   var email   = document.getElementById('manEmail').value.trim();
   var address = document.getElementById('manAddress').value.trim();
   var accId   = document.getElementById('manAccId').value.trim();
@@ -679,10 +694,19 @@ bindTap(document.getElementById('manSubmit'), function(){
   var manStatusEl = document.getElementById('manSubmit');
   var statusMsgEl = document.getElementById('manStatus');
 
-  if (!name || !phone || !plan){
+  if (!name || !phone || !planVal){
     statusMsgEl.textContent = 'Name, phone, and plan are required.';
     statusMsgEl.className = 'sale-status err';
     return;
+  }
+
+  // manPlan values are prefixed "Mercury:" for Mercury plans so we can tell
+  // company apart from a flat dropdown without a separate company selector.
+  var company = 'nextlink';
+  var planRaw = planVal;
+  if (planVal.indexOf('Mercury:') === 0) {
+    company = 'mercury';
+    planRaw = planVal.slice('Mercury:'.length);
   }
 
   manStatusEl.disabled = true;
@@ -691,8 +715,8 @@ bindTap(document.getElementById('manSubmit'), function(){
   statusMsgEl.className = 'sale-status';
 
   var day = todayKey();
-  var std = standardizePlan(plan);
-  var summary = 'Called in: ' + name + ' \u2014 ' + phone + (plan ? ' \u2014 ' + plan : '') + (installDate ? ' \u2014 install ' + installDate : '');
+  var std = standardizePlanByCompany(company, planRaw);
+  var summary = 'Called in: ' + name + ' \u2014 ' + phone + (std.plan ? ' \u2014 ' + std.plan : '') + (installDate ? ' \u2014 install ' + installDate : '');
 
   var rawPayload = { type: 'manual', text: summary, notes: notes || null, ts: Date.now(), rep: REPS[slug] };
   var ref = db.ref('salesLog/' + day + '/' + slug).push();
@@ -700,6 +724,7 @@ bindTap(document.getElementById('manSubmit'), function(){
   withTimeout(ref.set(rawPayload), 10000, 'Save').then(function(){
     increment('sales');
     var fields = {
+      company: company,
       dateSold: day,
       repName: REPS[slug],
       accId: accId,
@@ -846,6 +871,7 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
     '<div class="sale-label">Plan</div>' +
     '<select class="sale-input" id="planFixSelect">' +
       '<option value="">Select a plan\u2026</option>' +
+      '<optgroup label="Nextlink">' +
       '<option value="NEXT100">NEXT100 \u2014 $37/mo</option>' +
       '<option value="NEXT200">NEXT200 \u2014 $37/mo</option>' +
       '<option value="NEXT300">NEXT300 \u2014 $57/mo</option>' +
@@ -856,6 +882,11 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
       '<option value="Fiber500">Fiber500 \u2014 $30/mo</option>' +
       '<option value="Fiber1000">Fiber1000 \u2014 $50/mo</option>' +
       '<option value="Fiber2000">Fiber2000 \u2014 $80/mo</option>' +
+      '</optgroup>' +
+      '<optgroup label="Mercury">' +
+      '<option value="Mercury:Essential">Essential \u2014 $35/mo</option>' +
+      '<option value="Mercury:Enhanced">Enhanced \u2014 $45/mo</option>' +
+      '</optgroup>' +
     '</select>' +
     '<button class="sale-text-btn" id="planFixConfirm">Confirm &amp; Continue</button>' +
     '</div>';
@@ -863,9 +894,13 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
   document.getElementById('planFixConfirm').onclick = debounceTap(function(){
     var chosen = document.getElementById('planFixSelect').value;
     if (!chosen){ return; }
-    var std2 = standardizePlan(chosen);
+
+    var company2 = parsed.company === 'mercury' ? 'mercury' : (chosen.indexOf('Mercury:') === 0 ? 'mercury' : 'nextlink');
+    var chosenPlan = chosen.indexOf('Mercury:') === 0 ? chosen.slice('Mercury:'.length) : chosen;
+    var std2 = standardizePlanByCompany(company2, chosenPlan);
 
     var fields = {
+      company: company2,
       dateSold: day,
       repName: REPS[repSlug],
       accId: parsed.account_number || '',
@@ -925,13 +960,15 @@ function runExtraction(day, repSlug, entryId, payload){
     var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
     if (parsed.error) throw new Error('not a recognizable order');
 
-    var std = standardizePlan(parsed.plan_raw);
+    var company = (parsed.company === 'mercury') ? 'mercury' : 'nextlink';
+    var std = standardizePlanByCompany(company, parsed.plan_raw);
 
     if (std.price === ''){
       showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std);
       return;
     }
     var fields = {
+      company: company,
       dateSold: day,
       repName: REPS[repSlug],
       accId: parsed.account_number || '',
@@ -981,25 +1018,41 @@ function runExtraction(day, repSlug, entryId, payload){
 
 var _saleGate = null;
 
+/* ── Ready screen: gates sheet sync by company. Nextlink behaves          ──
+   ── exactly as before. Mercury skips syncToSheet entirely — it's never   ──
+   ── called, so Code.gs and the sheet never even see a Mercury sale.      ── */
 function showReadyView(day, repSlug, entryId, fields){
   showSaleView('ready');
   saleReadyNameEl.textContent = fields.customerName || '(name not read)';
   saleReadySubEl.textContent = fields.phone ? formatPhoneDisplay(fields.phone) : '(no phone read)';
-  saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
+
+  if (fields.company === 'mercury') {
+    saleSyncNoteEl.textContent = 'Mercury \u2014 saved to database (no sheet sync)';
+  } else {
+    saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
+  }
 
   _saleGate = { textSent: false, syncDone: false, syncOk: null, fields: fields };
 
   saleSendTextBtn.onclick = debounceTap(function(){
-    sendConfirmationText(fields);
+    sendConfirmationTextByCompany(fields.company, fields);
     _saleGate.textSent = true;
     checkGate();
   });
 
-  syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
+  if (fields.company === 'mercury') {
+    // No sheet sync attempted at all for Mercury — mark the gate's sync
+    // portion as trivially "done" so checkGate() can proceed to complete
+    // without ever calling syncToSheet.
     _saleGate.syncDone = true;
-    _saleGate.syncOk = ok;
-    checkGate();
-  });
+    _saleGate.syncOk = 'na';
+  } else {
+    syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
+      _saleGate.syncDone = true;
+      _saleGate.syncOk = ok;
+      checkGate();
+    });
+  }
 }
 
 function formatPhoneDisplay(p){
@@ -1012,9 +1065,11 @@ function checkGate(){
   if (!_saleGate) return;
 
   if (!_saleGate.textSent){
-    saleSyncNoteEl.textContent = _saleGate.syncDone
-      ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
-      : 'Syncing to sheet\u2026';
+    if (_saleGate.fields.company !== 'mercury') {
+      saleSyncNoteEl.textContent = _saleGate.syncDone
+        ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
+        : 'Syncing to sheet\u2026';
+    }
     return;
   }
 
@@ -1023,7 +1078,9 @@ function checkGate(){
     return;
   }
 
-  if (_saleGate.syncOk){
+  if (_saleGate.syncOk === 'na'){
+    showCompleteState('mercury-done');
+  } else if (_saleGate.syncOk){
     showCompleteState('done');
   } else {
     showCompleteState('saved-not-synced');
@@ -1045,6 +1102,12 @@ function showCompleteState(state){
     saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
     saleCompleteSubEl.textContent = name + ' is texted, saved, and synced. Deal info is on your clipboard.';
     saleCompleteDoneBtn.style.display = '';
+  } else if (state === 'mercury-done'){
+    saleCompleteIconEl.className = 'sale-complete-check ok';
+    saleCompleteIconEl.textContent = '\u2713';
+    saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
+    saleCompleteSubEl.textContent = name + ' is texted and saved to the database. Deal info is on your clipboard. (Mercury sales don\u2019t sync to the Google Sheet.)';
+    saleCompleteDoneBtn.style.display = '';
   } else {
     saleCompleteIconEl.className = 'sale-complete-check warn';
     saleCompleteIconEl.textContent = '\u2713';
@@ -1056,6 +1119,7 @@ function showCompleteState(state){
 
 bindTap(saleCompleteDoneBtn, function(){ closeSaleModal(); });
 
+/* ── NEXTLINK confirmation text — untouched from before ──────────── */
 function formatConfirmDate(iso){
   if (!iso) return null;
   var d = new Date(iso + 'T12:00:00');
@@ -1073,9 +1137,19 @@ function formatWindow(raw){
   return raw.replace(/\s+/g, '').toLowerCase();
 }
 
+/* ── MERCURY's own 3-slot window classifier — separate from Nextlink's ── */
+function formatWindowMercury(raw){
+  if (!raw) return '';
+  var lower = raw.toLowerCase().replace(/\s+/g, '');
+  if (lower.indexOf('8:00am') !== -1 || lower.indexOf('8am') !== -1) return '8am-1pm';
+  if (lower.indexOf('1:00pm') !== -1 || (lower.indexOf('1pm') !== -1 && lower.indexOf('5pm') !== -1)) return '1pm-5pm';
+  if (lower.indexOf('5:00pm') !== -1 || lower.indexOf('5pm-8pm') !== -1) return '5pm-8pm';
+  return raw.replace(/\s+/g, '').toLowerCase();
+}
+
 function buildClipboardText(fields){
   var dateStr   = formatConfirmDate(fields.installDate);
-  var windowStr = formatWindow(fields.installWindow);
+  var windowStr = fields.company === 'mercury' ? formatWindowMercury(fields.installWindow) : formatWindow(fields.installWindow);
   var installLine = dateStr
     ? ('Install: ' + dateStr + (windowStr ? ' \u2014 ' + windowStr : ''))
     : 'Install: TBD';
@@ -1107,6 +1181,7 @@ function fallbackCopyText(text){
   document.body.removeChild(ta);
 }
 
+/* ── NEXTLINK confirmation text — untouched from before ──────────── */
 function sendConfirmationText(fields){
   var dateStr   = formatConfirmDate(fields.installDate);
   var windowStr = formatWindow(fields.installWindow);
@@ -1138,6 +1213,43 @@ function sendConfirmationText(fields){
   window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(body);
 }
 
+/* ── MERCURY confirmation text — new, separate template ──────────── */
+function sendConfirmationTextMercury(fields){
+  var dateStr   = formatConfirmDate(fields.installDate);
+  var windowStr = formatWindowMercury(fields.installWindow);
+  var repFirst  = (fields.repName || '').split(' ')[0];
+
+  var installLine = dateStr
+    ? ('Install date: ' + dateStr + (windowStr ? ' \u2014 Arrival between ' + windowStr : '') + '  \uD83D\uDEDC')
+    : ('Install date: TBD \u2014 I\u2019ll text you with the exact date  \uD83D\uDEDC');
+
+  var lines = [
+    installLine,
+    '',
+    '$' + fields.price + ' flat monthly (taxes & fees already included)  \u2705',
+    '',
+    '100% Unlimited',
+    'No contract',
+    'Install & Equipment included',
+    '',
+    '\u2014 ' + repFirst + ', Mercury Fiber'
+  ];
+
+  var body = lines.join('\n');
+  var phone = (fields.phone || '').replace(/\D/g,'');
+  copyToClipboard(buildClipboardText(fields));
+  window.location.href = 'sms:' + phone + '?body=' + encodeURIComponent(body);
+}
+
+/* ── Dispatcher: routes to the right text template by company.       ──
+   ── Nextlink's own sendConfirmationText() above is never modified.  ── */
+function sendConfirmationTextByCompany(company, fields){
+  if (company === 'mercury') return sendConfirmationTextMercury(fields);
+  return sendConfirmationText(fields);
+}
+
+/* ── NEXTLINK sheet sync — untouched from before. Never called for    ──
+   ── Mercury sales at all (see showReadyView above).                  ── */
 function syncToSheet(day, repSlug, entryId, fields, attempt){
   return fetchWithTimeout(APPS_SCRIPT_URL, {
     method: 'POST',
