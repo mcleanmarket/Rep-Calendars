@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- v57 -->
+  <!-- v58 -->
   <title>Rep Calendar</title>
   <meta name="description" content="Rep Calendar">
   <meta property="og:title" content="Rep Calendar">
@@ -755,12 +755,42 @@ function renderDashboard() {
   // Fail rate: Failed / (Installed + Failed) — of accounts that reached install, % that failed
   var failDenom    = installed + failed;
   var failRate     = failDenom>0 ? Math.round(failed/failDenom*100) : 0;
-  var planCounts = {};
-  _repRows.forEach(function(r){ var p=r['Plan']||'—'; planCounts[p]=(planCounts[p]||0)+1; });
-  var planRows = Object.keys(planCounts).sort().map(function(p){
-    var pct=total>0?Math.round(planCounts[p]/total*100):0;
-    return '<tr><td>'+p+'</td><td>'+planCounts[p]+'</td><td style="text-align:right;color:var(--g500);">'+pct+'%</td></tr>';
-  }).join('');
+  // Dealer-wide monthly install tracker (Logan's page only)
+  var _now = new Date();
+  var curKey  = _now.getFullYear()*12 + _now.getMonth();
+  var prevKey = curKey - 1;
+  var nextKey = curKey + 1;
+  function dealerMonthCount(status, monthKey){
+    return _allRows.filter(function(r){
+      if ((r['Status']||'') !== status) return false;
+      var d = parseDate(r['Install Date']);
+      if (!d) return false;
+      return (d.getFullYear()*12 + d.getMonth()) === monthKey;
+    }).length;
+  }
+  var instThis  = dealerMonthCount('Installed', curKey);
+  var instPrev  = dealerMonthCount('Installed', prevKey);
+  var schedThis = dealerMonthCount('Scheduled', curKey);
+  var schedNext = dealerMonthCount('Scheduled', nextKey);
+  var curMN  = MN[_now.getMonth()];
+  var prevMN = MN[(_now.getMonth()+11)%12];
+  var nextMN = MN[(_now.getMonth()+1)%12];
+  var dealerCard = (slug === 'logan') ?
+    ('<div class="dash-card" style="grid-column:1 / -1;">'
+      +'<div class="dash-card-title">Dealer Installs — Whole Team</div>'
+      +'<div style="display:flex;gap:24px;">'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--g500);margin-bottom:4px;">Installed</div>'
+          +'<div class="dash-stat-row installed"><span>'+curMN+'</span><strong>'+instThis+'</strong></div>'
+          +'<div class="dash-stat-row installed"><span>'+prevMN+'</span><strong>'+instPrev+'</strong></div>'
+        +'</div>'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--g500);margin-bottom:4px;">Scheduled (to install)</div>'
+          +'<div class="dash-stat-row scheduled"><span>'+curMN+'</span><strong>'+schedThis+'</strong></div>'
+          +'<div class="dash-stat-row scheduled"><span>'+nextMN+'</span><strong>'+schedNext+'</strong></div>'
+        +'</div>'
+      +'</div>'
+    +'</div>') : '';
   body.innerHTML =
     '<div class="dash-grid">'
     // ── Row 1: Top Days | Top Weeks ───────────────────────
@@ -814,39 +844,7 @@ function renderDashboard() {
       +'<div class="dash-stat-row cancel-rate"><span>Cancel Rate</span><strong>'+cancelRate+'%</strong></div>'
       +'<div class="dash-stat-row fail-rate"><span>Fail Rate</span><strong>'+failRate+'%</strong></div>'
     +'</div>'
-    +'<div class="dash-card"><div class="dash-card-title">Plan Mix</div>'
-      +'<table class="plan-table"><tbody>'+planRows+'</tbody></table>'
-    +'</div>'
-    +'<div class="dash-card"><div class="dash-card-title">Daily Averages</div>'
-      +(function(){
-        var nonPending = _repRows.filter(function(r){ return (r['Status']||'')!=='Pending'; });
-        var sellDays={}, installDays={};
-        nonPending.forEach(function(r){
-          var d = parseDate(r['Date Sold']);
-          if (d) { var k=fmtShort(d); if(k&&k!=='—') sellDays[k]=1; }
-        });
-        _repRows.forEach(function(r){
-          if ((r['Status']||'')==='Installed') {
-            var d = parseDate(r['Install Date']);
-            if (d) { var k=fmtShort(d); if(k&&k!=='—') installDays[k]=1; }
-          }
-        });
-        var totalSold      = nonPending.length;
-        var totalInstalled = _repRows.filter(function(r){ return (r['Status']||'')==='Installed'; }).length;
-        var totalCancelled = _repRows.filter(function(r){ return (r['Status']||'')==='Cancelled'; }).length;
-        var dSell    = Object.keys(sellDays).length    || 1;
-        var dInstall = Object.keys(installDays).length || 1;
-        var avgSoldDay   = (totalSold/dSell).toFixed(1);
-        var avgInstDay   = (totalInstalled/dInstall).toFixed(1);
-        var avgCancelDay = (totalCancelled/dSell).toFixed(1);
-        function row(label, val, color) {
-          return '<div class="dash-stat-row"><span>'+label+'</span><span style="font-size:15px;font-weight:400;color:'+color+';">'+val+'</span></div>';
-        }
-        return row('Sold',      avgSoldDay,   'var(--black)')
-          + row('Installed',  avgInstDay,   '#166534')
-          + row('Cancelled',  avgCancelDay, '#991b1b');
-      })()
-    +'</div>'
+    +dealerCard
     +'</div>';
 }
 function renderAccounts() {
