@@ -590,6 +590,13 @@ function standardizePlanByCompany(company, rawPlan){
   return standardizePlan(rawPlan);
 }
 
+/* ── Every Mercury sale's notes get a "MERCURY" marker, same as counter.html ── */
+function applyCompanyNotes(company, rawNotes){
+  var trimmed = (rawNotes || '').trim();
+  if (company !== 'mercury') return trimmed;
+  return trimmed ? ('MERCURY \u2013 ' + trimmed) : 'MERCURY';
+}
+
 function buildRow(day, repSlug, entry, fields, flagged, errMsg){
   var company = fields.company === 'mercury' ? 'mercury' : 'nextlink';
   var std = standardizePlanByCompany(company, fields.plan_raw);
@@ -612,7 +619,7 @@ function buildRow(day, repSlug, entry, fields, flagged, errMsg){
     plan: std.plan,
     price: std.price,
     installDate: fields.install_date || '',
-    notes: (entry.notes || '').trim(), // strictly the rep's own typed note \u2014 nothing invented
+    notes: applyCompanyNotes(company, entry.notes), // MERCURY-prefixed for Mercury, untouched for Nextlink
     status: fields.install_date ? 'Scheduled' : (flagged ? 'Needs review' : 'Pending')
   };
 }
