@@ -443,6 +443,15 @@ function standardizePlanByCompany(company, rawPlan){
   return standardizePlan(rawPlan);
 }
 
+/* ── Every Mercury sale's notes get a "MERCURY" marker so they're        ──
+   ── unmistakable anywhere notes show up (Sales Review's Mercury panel,  ──
+   ── and the sheet if you ever copy Mercury rows over manually).         ── */
+function applyCompanyNotes(company, rawNotes){
+  var trimmed = (rawNotes || '').trim();
+  if (company !== 'mercury') return trimmed;
+  return trimmed ? ('MERCURY \u2013 ' + trimmed) : 'MERCURY';
+}
+
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRtaW6dBF8JHdUhnTBvpLBUUC9Gedw-4jeDEkgBuKv_M_t-kojomJY61Yo9RrHQbE3/exec';
 var APPEND_SECRET = 'nextlink-motion-9f2k7q';
 
@@ -738,7 +747,7 @@ bindTap(document.getElementById('manSubmit'), function(){
       price: std.price,
       installDate: installDate || '',
       installWindow: installWindow || '',
-      notes: notes,
+      notes: applyCompanyNotes(company, notes),
       status: installDate ? 'Scheduled' : 'Pending'
     };
     return withTimeout(db.ref('salesLog/' + day + '/' + slug + '/' + ref.key + '/processed').set(fields), 10000, 'Save').then(function(){
@@ -914,7 +923,7 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
       price: std2.price,
       installDate: parsed.install_date || '',
       installWindow: parsed.install_window || '',
-      notes: (payload.notes || '').trim(),
+      notes: applyCompanyNotes(company2, payload.notes),
       status: parsed.install_date ? 'Scheduled' : 'Pending'
     };
 
@@ -982,7 +991,7 @@ function runExtraction(day, repSlug, entryId, payload){
       price: std.price,
       installDate: parsed.install_date || '',
       installWindow: parsed.install_window || '',
-      notes: (payload.notes || '').trim(),
+      notes: applyCompanyNotes(company, payload.notes),
       status: parsed.install_date ? 'Scheduled' : 'Pending'
     };
 
