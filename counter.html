@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v67 — adds Mercury as a fully separate, parallel path: its own pricing table, its own confirmation text, its own 3-slot install window, and its sales SKIP the Google Sheet sync entirely (never call syncToSheet at all). Every existing Nextlink function is untouched — Mercury only ever ADDS new functions plus small dispatchers that route to Nextlink's existing, unmodified code by default. -->
+  <!-- counter-v69 — Mercury sales now sync to the sheet exactly like Nextlink (previously skipped entirely). Code.gs routes each sale to the correct tab based on its company field. Removed the now-dead Mercury-specific branches in showReadyView/checkGate/showCompleteState. (Comment also corrects v67→v68 mislabeling: the file-input fix and MERCURY notes-prefix from v68 were already present in content, just not reflected in this comment.) -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1028,19 +1028,13 @@ function runExtraction(day, repSlug, entryId, payload){
 
 var _saleGate = null;
 
-/* ── Ready screen: gates sheet sync by company. Nextlink behaves          ──
-   ── exactly as before. Mercury skips syncToSheet entirely — it's never   ──
-   ── called, so Code.gs and the sheet never even see a Mercury sale.      ── */
+/* ── Ready screen: both companies now follow the exact same sync flow.  ──
+   ── Code.gs routes the write to the correct tab based on fields.company ── */
 function showReadyView(day, repSlug, entryId, fields){
   showSaleView('ready');
   saleReadyNameEl.textContent = fields.customerName || '(name not read)';
   saleReadySubEl.textContent = fields.phone ? formatPhoneDisplay(fields.phone) : '(no phone read)';
-
-  if (fields.company === 'mercury') {
-    saleSyncNoteEl.textContent = 'Mercury \u2014 saved to database (no sheet sync)';
-  } else {
-    saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
-  }
+  saleSyncNoteEl.textContent = 'Syncing to sheet\u2026';
 
   _saleGate = { textSent: false, syncDone: false, syncOk: null, fields: fields };
 
@@ -1050,19 +1044,11 @@ function showReadyView(day, repSlug, entryId, fields){
     checkGate();
   });
 
-  if (fields.company === 'mercury') {
-    // No sheet sync attempted at all for Mercury — mark the gate's sync
-    // portion as trivially "done" so checkGate() can proceed to complete
-    // without ever calling syncToSheet.
+  syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
     _saleGate.syncDone = true;
-    _saleGate.syncOk = 'na';
-  } else {
-    syncToSheet(day, repSlug, entryId, fields, 0).then(function(ok){
-      _saleGate.syncDone = true;
-      _saleGate.syncOk = ok;
-      checkGate();
-    });
-  }
+    _saleGate.syncOk = ok;
+    checkGate();
+  });
 }
 
 function formatPhoneDisplay(p){
@@ -1075,11 +1061,9 @@ function checkGate(){
   if (!_saleGate) return;
 
   if (!_saleGate.textSent){
-    if (_saleGate.fields.company !== 'mercury') {
-      saleSyncNoteEl.textContent = _saleGate.syncDone
-        ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
-        : 'Syncing to sheet\u2026';
-    }
+    saleSyncNoteEl.textContent = _saleGate.syncDone
+      ? (_saleGate.syncOk ? 'Synced to sheet \u2713' : 'Sheet sync failed \u2014 will retry from Sales Review')
+      : 'Syncing to sheet\u2026';
     return;
   }
 
@@ -1088,9 +1072,7 @@ function checkGate(){
     return;
   }
 
-  if (_saleGate.syncOk === 'na'){
-    showCompleteState('mercury-done');
-  } else if (_saleGate.syncOk){
+  if (_saleGate.syncOk){
     showCompleteState('done');
   } else {
     showCompleteState('saved-not-synced');
@@ -1111,12 +1093,6 @@ function showCompleteState(state){
     saleCompleteIconEl.textContent = '\u2713';
     saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
     saleCompleteSubEl.textContent = name + ' is texted, saved, and synced. Deal info is on your clipboard.';
-    saleCompleteDoneBtn.style.display = '';
-  } else if (state === 'mercury-done'){
-    saleCompleteIconEl.className = 'sale-complete-check ok';
-    saleCompleteIconEl.textContent = '\u2713';
-    saleCompleteTitleEl.textContent = 'This deal is done \u2014 and copied.';
-    saleCompleteSubEl.textContent = name + ' is texted and saved to the database. Deal info is on your clipboard. (Mercury sales don\u2019t sync to the Google Sheet.)';
     saleCompleteDoneBtn.style.display = '';
   } else {
     saleCompleteIconEl.className = 'sale-complete-check warn';
