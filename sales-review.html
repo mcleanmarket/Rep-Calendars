@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- sales-review-v25 — Mercury panel now mirrors Nextlink's sync UI exactly (checkmark/pending/retry column, its own scoped "Retry all failed" alert), since Mercury sales now sync to the sheet. resyncAllFailed(company) is now parameterized so each panel's retry button only touches its own company's failures. -->
+<!-- sales-review-v26 — mirrors counter.html's new Mercury Fiber pricing table (100 Mbps/500 Mbps/1 Gig/2 Gig/2 Gig Plus) so the "Process this day" bulk-reprocess tool prices Fiber sales correctly too. FW pricing unchanged. -->
 <title>Sales Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -596,12 +596,21 @@ function standardizePlan(rawPlan){
   }
 }
 
-/* ── MERCURY pricing — brand new, flat rate by plan name ──────────── */
+/* ── MERCURY pricing — fixed wireless ──────────────────────────────── */
 var MERCURY_PRICES = { 'Essential': 35, 'Enhanced': 45 };
+
+/* ── MERCURY pricing — fiber (mirrors counter.html's table) ─────────── */
+var MERCURY_FIBER_PRICES = { '100 Mbps': 69, '500 Mbps': 69, '1 Gig': 79, '2 Gig': 109, '2 Gig Plus': 129 };
+
 function standardizePlanMercury(rawPlan){
   if (!rawPlan) return { plan:'', price:'' };
   if (/enhanced/i.test(rawPlan)) return { plan: 'Enhanced', price: MERCURY_PRICES['Enhanced'] };
   if (/essential/i.test(rawPlan)) return { plan: 'Essential', price: MERCURY_PRICES['Essential'] };
+  if (/2\s*gig\s*plus/i.test(rawPlan)) return { plan: '2 Gig Plus', price: MERCURY_FIBER_PRICES['2 Gig Plus'] };
+  if (/2\s*gig/i.test(rawPlan))        return { plan: '2 Gig',      price: MERCURY_FIBER_PRICES['2 Gig'] };
+  if (/1\s*gig/i.test(rawPlan))        return { plan: '1 Gig',      price: MERCURY_FIBER_PRICES['1 Gig'] };
+  if (/500\s*mbps/i.test(rawPlan))     return { plan: '500 Mbps',   price: MERCURY_FIBER_PRICES['500 Mbps'] };
+  if (/100\s*mbps/i.test(rawPlan))     return { plan: '100 Mbps',   price: MERCURY_FIBER_PRICES['100 Mbps'] };
   return { plan: rawPlan, price: '' };
 }
 
