@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- counter-v69 — Mercury sales now sync to the sheet exactly like Nextlink (previously skipped entirely). Code.gs routes each sale to the correct tab based on its company field. Removed the now-dead Mercury-specific branches in showReadyView/checkGate/showCompleteState. (Comment also corrects v67→v68 mislabeling: the file-input fix and MERCURY notes-prefix from v68 were already present in content, just not reflected in this comment.) -->
+  <!-- counter-v70 — adds Mercury Fiber (100 Mbps/500 Mbps/1 Gig/2 Gig/2 Gig Plus) alongside existing Fixed Wireless (Essential/Enhanced). New pricing table + mastercard-amount table, both dropdowns split into FW/Fiber optgroups, confirmation text now branches by mercuryProduct since the pricing sentence itself differs between FW and Fiber (not just an added line). FW pricing/text completely unchanged. -->
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -236,9 +236,16 @@
         <option value="Fiber1000">Fiber1000 &mdash; $50/mo</option>
         <option value="Fiber2000">Fiber2000 &mdash; $80/mo</option>
         </optgroup>
-        <optgroup label="Mercury">
+        <optgroup label="Mercury \u2014 Fixed Wireless">
         <option value="Mercury:Essential">Essential &mdash; $35/mo</option>
         <option value="Mercury:Enhanced">Enhanced &mdash; $45/mo</option>
+        </optgroup>
+        <optgroup label="Mercury \u2014 Fiber">
+        <option value="Mercury:100 Mbps">100 Mbps &mdash; $69/mo</option>
+        <option value="Mercury:500 Mbps">500 Mbps &mdash; $69/mo</option>
+        <option value="Mercury:1 Gig">1 Gig &mdash; $79/mo + $100 Mastercard</option>
+        <option value="Mercury:2 Gig">2 Gig &mdash; $109/mo + $300 Mastercard</option>
+        <option value="Mercury:2 Gig Plus">2 Gig Plus &mdash; $129/mo + $400 Mastercard</option>
         </optgroup>
       </select>
 
@@ -427,12 +434,26 @@ function standardizePlan(rawPlan){
   }
 }
 
-/* ── MERCURY pricing — brand new, flat rate by plan name, no speed math ── */
+/* ── MERCURY pricing — fixed wireless (flat rate by plan name) ──────── */
 var MERCURY_PRICES = { 'Essential': 35, 'Enhanced': 45 };
+
+/* ── MERCURY pricing — fiber (flat rate by tier name, some tiers include ──
+   ── a one-time prepaid Mastercard, tracked separately from the monthly  ──
+   ── price since it's a one-time perk, not a recurring charge)           ── */
+var MERCURY_FIBER_PRICES     = { '100 Mbps': 69, '500 Mbps': 69, '1 Gig': 79, '2 Gig': 109, '2 Gig Plus': 129 };
+var MERCURY_FIBER_MASTERCARD = { '100 Mbps': 0,  '500 Mbps': 0,  '1 Gig': 100, '2 Gig': 300, '2 Gig Plus': 400 };
+
 function standardizePlanMercury(rawPlan){
   if (!rawPlan) return { plan:'', price:'' };
-  if (/enhanced/i.test(rawPlan)) return { plan: 'Enhanced', price: MERCURY_PRICES['Enhanced'] };
-  if (/essential/i.test(rawPlan)) return { plan: 'Essential', price: MERCURY_PRICES['Essential'] };
+  if (/enhanced/i.test(rawPlan)) return { plan: 'Enhanced', price: MERCURY_PRICES['Enhanced'], mercuryProduct: 'fw' };
+  if (/essential/i.test(rawPlan)) return { plan: 'Essential', price: MERCURY_PRICES['Essential'], mercuryProduct: 'fw' };
+  // Fiber — check "Plus" variants BEFORE their base tier, since "2 Gig Plus"
+  // contains "2 Gig" and would otherwise match the wrong, cheaper tier.
+  if (/2\s*gig\s*plus/i.test(rawPlan)) return { plan: '2 Gig Plus', price: MERCURY_FIBER_PRICES['2 Gig Plus'], mercuryProduct: 'fiber', mastercard: MERCURY_FIBER_MASTERCARD['2 Gig Plus'] };
+  if (/2\s*gig/i.test(rawPlan))        return { plan: '2 Gig',      price: MERCURY_FIBER_PRICES['2 Gig'],      mercuryProduct: 'fiber', mastercard: MERCURY_FIBER_MASTERCARD['2 Gig'] };
+  if (/1\s*gig/i.test(rawPlan))        return { plan: '1 Gig',      price: MERCURY_FIBER_PRICES['1 Gig'],      mercuryProduct: 'fiber', mastercard: MERCURY_FIBER_MASTERCARD['1 Gig'] };
+  if (/500\s*mbps/i.test(rawPlan))     return { plan: '500 Mbps',   price: MERCURY_FIBER_PRICES['500 Mbps'],   mercuryProduct: 'fiber', mastercard: 0 };
+  if (/100\s*mbps/i.test(rawPlan))     return { plan: '100 Mbps',   price: MERCURY_FIBER_PRICES['100 Mbps'],   mercuryProduct: 'fiber', mastercard: 0 };
   return { plan: rawPlan, price: '' };
 }
 
@@ -744,6 +765,8 @@ bindTap(document.getElementById('manSubmit'), function(){
       address: address,
       plan: std.plan,
       speed: std.speed || '',
+      mercuryProduct: std.mercuryProduct || '',
+      mastercard: std.mastercard || 0,
       price: std.price,
       installDate: installDate || '',
       installWindow: installWindow || '',
@@ -893,9 +916,16 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
       '<option value="Fiber1000">Fiber1000 \u2014 $50/mo</option>' +
       '<option value="Fiber2000">Fiber2000 \u2014 $80/mo</option>' +
       '</optgroup>' +
-      '<optgroup label="Mercury">' +
+      '<optgroup label="Mercury \u2014 Fixed Wireless">' +
       '<option value="Mercury:Essential">Essential \u2014 $35/mo</option>' +
       '<option value="Mercury:Enhanced">Enhanced \u2014 $45/mo</option>' +
+      '</optgroup>' +
+      '<optgroup label="Mercury \u2014 Fiber">' +
+      '<option value="Mercury:100 Mbps">100 Mbps \u2014 $69/mo</option>' +
+      '<option value="Mercury:500 Mbps">500 Mbps \u2014 $69/mo</option>' +
+      '<option value="Mercury:1 Gig">1 Gig \u2014 $79/mo + $100 Mastercard</option>' +
+      '<option value="Mercury:2 Gig">2 Gig \u2014 $109/mo + $300 Mastercard</option>' +
+      '<option value="Mercury:2 Gig Plus">2 Gig Plus \u2014 $129/mo + $400 Mastercard</option>' +
       '</optgroup>' +
     '</select>' +
     '<button class="sale-text-btn" id="planFixConfirm">Confirm &amp; Continue</button>' +
@@ -920,6 +950,8 @@ function showPlanFixPrompt(day, repSlug, entryId, payload, parsed, std){
       address: parsed.address || '',
       plan: std2.plan,
       speed: std2.speed || '',
+      mercuryProduct: std2.mercuryProduct || '',
+      mastercard: std2.mastercard || 0,
       price: std2.price,
       installDate: parsed.install_date || '',
       installWindow: parsed.install_window || '',
@@ -988,6 +1020,8 @@ function runExtraction(day, repSlug, entryId, payload){
       address: parsed.address || '',
       plan: std.plan,
       speed: std.speed || '',
+      mercuryProduct: std.mercuryProduct || '',
+      mastercard: std.mastercard || 0,
       price: std.price,
       installDate: parsed.install_date || '',
       installWindow: parsed.install_window || '',
@@ -1209,17 +1243,22 @@ function sendConfirmationTextMercury(fields){
     ? ('Install date: ' + dateStr + (windowStr ? ' \u2014 Arrival between ' + windowStr : '') + '  \uD83D\uDEDC')
     : ('Install date: TBD \u2014 I\u2019ll text you with the exact date  \uD83D\uDEDC');
 
-  var lines = [
-    installLine,
-    '',
-    '$' + fields.price + ' flat monthly (taxes & fees already included)  \u2705',
+  var priceLines;
+  if (fields.mercuryProduct === 'fiber') {
+    priceLines = ['$' + fields.price + ' monthly \u2014 3-Year Price Guarantee  \u2705'];
+    if (fields.mastercard) priceLines.push('$' + fields.mastercard + ' Prepaid Mastercard  \uD83D\uDCB3');
+  } else {
+    priceLines = ['$' + fields.price + ' flat monthly (taxes & fees already included)  \u2705'];
+  }
+
+  var lines = [installLine, ''].concat(priceLines).concat([
     '',
     '100% Unlimited',
     'No contract',
     'Install & Equipment included',
     '',
     '\u2014 ' + repFirst + ', Mercury Fiber'
-  ];
+  ]);
 
   var body = lines.join('\n');
   var phone = (fields.phone || '').replace(/\D/g,'');
