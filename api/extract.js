@@ -8,7 +8,7 @@ Today's date is ${todayStr}. Installs are always scheduled within about 2 months
 
 FIRST: identify which company this order confirmation is from.
 - "nextlink" \u2014 shows an orange "Account #" banner, a small green customer ID number, plan names like "NEXT500" or "FiberNEXT500".
-- "mercury" \u2014 shows an "Order ID", a "Confirm Order" or "Scheduled Install" heading, plan names "Essential" or "Enhanced", "Recurring Monthly Fees" / "Due at Installation" sections.
+- "mercury" \u2014 shows an "Order ID", a "Confirm Order" or "Scheduled Install" heading, plan names "Essential", "Enhanced" (fixed wireless), or "100 Mbps", "500 Mbps", "1 Gig", "2 Gig", "2 Gig Plus" (fiber), "Recurring Monthly Fees" / "Due at Installation" sections.
 - If you cannot tell, or it's neither, set company to null and set flag to say so \u2014 do not guess.
 
 OUTPUT SHAPE (all keys always present):
@@ -21,7 +21,7 @@ FIELD RULES
 - phone: 10 digits, no punctuation. Blank if not shown \u2014 never guess. Of every field on this page, the phone number matters most \u2014 a single misread digit sends a confirmation text to the wrong person. Read it slowly and deliberately, digit by digit, rather than pattern-matching at a glance. If any digit is even slightly unclear (blur, glare, cropping, low contrast), do not guess it \u2014 leave the whole field blank and use "flag" to say the phone number was unclear, rather than risk one wrong digit going out silently correct-looking.
 - email: as shown, lowercase. Blank if not shown.
 - address: "street, city, ST zip" \u2014 drop any trailing ", USA". Use the 2-letter state abbreviation.
-- plan_raw: for Nextlink, the plan name exactly as shown on the page (e.g. "FiberNEXT500", "NEXT200", "Fiber1000") \u2014 copy it verbatim, do not normalize, expand, or guess it. For Mercury, this will be exactly "Essential" or "Enhanced" \u2014 copy whichever one is shown (ignore any trailing version number like "2.0", that's a product revision, not part of the plan name).
+- plan_raw: for Nextlink, the plan name exactly as shown on the page (e.g. "FiberNEXT500", "NEXT200", "Fiber1000") \u2014 copy it verbatim, do not normalize, expand, or guess it. For Mercury fixed-wireless, this will be exactly "Essential" or "Enhanced" (ignore any trailing version number like "2.0", that's a product revision, not part of the plan name). For Mercury fiber, this will be exactly one of "100 Mbps", "500 Mbps", "1 Gig", "2 Gig", "2 Gig Plus" \u2014 copy the tier name exactly as shown, including "Plus" if present (a plan card that just says "2 Gig" is a DIFFERENT, cheaper tier than one that says "2 Gig Plus" \u2014 do not drop or add "Plus").
 - install_date: YYYY-MM-DD if any date is shown, resolving the year per the rule above. If the page says "No installation date has been selected" or no date appears at all, set this to null \u2014 that is a valid, expected state, not an error.
 - install_window: the time range shown alongside the install date, exactly as displayed (e.g. "8 AM-12 PM", "8:00am - 1:00pm"). Null if no date/window is shown.
 - flag: a short string naming anything that needs a human's eyes \u2014 an unreadable or ambiguous field, an unusual layout, a likely typo \u2014 or null if nothing stands out. This is for internal review only; never use it to add invented information anywhere else.
